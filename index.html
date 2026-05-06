@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduSmart – Nauka z klasą!</title>
+<meta name="description" content="EduSmart – interaktywna aplikacja do nauki dla klas 4, 5 i 6">
+<meta name="theme-color" content="#0d1b3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EduSmart">
+<link rel="manifest" id="pwa-manifest">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0d1b3e;
+  --navy2: #162150;
+  --card: rgba(255,255,255,0.07);
+  --card-hover: rgba(255,255,255,0.13);
+  --border: rgba(255,255,255,0.12);
+  --text: #f0f4ff;
+  --muted: #8fa3c8;
+  --math: #ff6b6b;
+  --polish: #48dbfb;
+  --english: #ffd32a;
+  --nature: #0be881;
+  --history: #c56cf0;
+  --c4: #ff9f43;
+  --c5: #54a0ff;
+  --c6: #ff6b9d;
+  --radius: 20px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.35);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--navy);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+/* ===== BACKGROUND STARS ===== */
+#stars-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:.1;transform:scale(1)}100%{opacity:.8;transform:scale(1.5)}}
+
+/* ===== LOADER ===== */
+#loader{
+  position:fixed;inset:0;z-index:999;
+  background:var(--navy);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .5s,visibility .5s;
+}
+#loader.hidden{opacity:0;visibility:hidden}
+.loader-logo{font-family:'Fredoka One',cursive;font-size:3rem;background:linear-gradient(135deg,#ff6b6b,#ffd32a,#0be881,#48dbfb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.5rem;animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.05)}}
+.loader-bar{width:220px;height:6px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden}
+.loader-fill{height:100%;width:0;background:linear-gradient(90deg,#ff6b6b,#ffd32a,#0be881);border-radius:99px;animation:load 1.8s ease forwards}
+@keyframes load{to{width:100%}}
+.loader-text{margin-top:.8rem;color:var(--muted);font-size:.9rem;font-weight:600}
+
+/* ===== SCREENS ===== */
+.screen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  padding:1.5rem 1rem;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  animation:fadeSlideIn .4s ease;
+}
+.screen.active{display:flex}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== BACK BUTTON ===== */
+.back-btn{
+  align-self:flex-start;
+  display:flex;align-items:center;gap:.4rem;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--muted);font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;
+  padding:.5rem 1rem;border-radius:50px;cursor:pointer;
+  transition:all .2s;margin-bottom:1rem;
+}
+.back-btn:hover{background:var(--card-hover);color:var(--text);transform:translateX(-3px)}
+
+/* ===== HOME SCREEN ===== */
+.home-logo{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(2.8rem,8vw,5rem);
+  background:linear-gradient(135deg,#ff6b6b 0%,#ffd32a 40%,#0be881 70%,#48dbfb 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-align:center;line-height:1;margin-bottom:.4rem;
+  filter:drop-shadow(0 0 30px rgba(255,107,107,.3));
+  animation:float 3s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.home-sub{color:var(--muted);font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:.5rem;letter-spacing:.05em}
+.home-tagline{color:rgba(255,255,255,.5);font-size:.85rem;text-align:center;margin-bottom:2.5rem}
+.home-mascot{font-size:5rem;text-align:center;margin-bottom:1.5rem;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+.class-section-title{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--muted);margin-bottom:1.2rem;letter-spacing:.05em}
+.class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;width:100%;max-width:480px;margin-bottom:2rem}
+.class-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem 1rem;text-align:center;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.class-card::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent,#fff);opacity:0;
+  transition:opacity .25s;
+}
+.class-card:hover{transform:translateY(-6px) scale(1.04);border-color:var(--accent);box-shadow:0 12px 40px color-mix(in srgb,var(--accent) 30%,transparent)}
+.class-card:hover::before{opacity:.07}
+.class-card[data-class="4"]{--accent:var(--c4)}
+.class-card[data-class="5"]{--accent:var(--c5)}
+.class-card[data-class="6"]{--accent:var(--c6)}
+.class-num{font-family:'Fredoka One',cursive;font-size:2.5rem;line-height:1;color:var(--accent)}
+.class-label{font-size:.8rem;font-weight:700;color:var(--muted);margin-top:.3rem}
+.stats-bar{
+  width:100%;max-width:480px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1rem 1.5rem;
+  display:flex;justify-content:space-around;align-items:center;
+}
+.stat-item{text-align:center}
+.stat-num{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--text)}
+.stat-label{font-size:.75rem;color:var(--muted);font-weight:700}
+
+/* ===== SUBJECT SCREEN ===== */
+.screen-title{font-family:'Fredoka One',cursive;font-size:clamp(1.6rem,5vw,2.2rem);text-align:center;margin-bottom:.4rem}
+.screen-subtitle{color:var(--muted);font-size:.9rem;font-weight:600;text-align:center;margin-bottom:1.8rem}
+.subjects-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;
+  width:100%;max-width:520px;
+}
+.subject-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem 1rem;text-align:center;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.subject-card:hover{transform:translateY(-5px);border-color:var(--sc);box-shadow:0 10px 35px color-mix(in srgb,var(--sc) 25%,transparent)}
+.subject-icon{font-size:2.5rem;display:block;margin-bottom:.6rem}
+.subject-name{font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--sc)}
+.subject-desc{font-size:.75rem;color:var(--muted);font-weight:600;margin-top:.2rem}
+.subject-card[data-subj="math"]{--sc:var(--math)}
+.subject-card[data-subj="polish"]{--sc:var(--polish)}
+.subject-card[data-subj="english"]{--sc:var(--english)}
+.subject-card[data-subj="nature"]{--sc:var(--nature)}
+.subject-card[data-subj="history"]{--sc:var(--history)}
+
+/* ===== CHAPTER SCREEN ===== */
+.chapters-list{width:100%;max-width:520px;display:flex;flex-direction:column;gap:.8rem}
+.chapter-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius);padding:1rem 1.4rem;cursor:pointer;
+  transition:all .22s;display:flex;align-items:center;gap:1rem;
+}
+.chapter-card:hover{background:var(--card-hover);border-color:var(--cc);transform:translateX(5px)}
+.chapter-num{
+  width:44px;height:44px;border-radius:50%;
+  background:var(--cc);display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:1.1rem;color:#fff;flex-shrink:0;
+}
+.chapter-info{flex:1}
+.chapter-name{font-weight:800;font-size:1rem}
+.chapter-meta{font-size:.78rem;color:var(--muted);font-weight:600;margin-top:.15rem}
+.chapter-arrow{color:var(--muted);font-size:1.2rem;transition:transform .2s}
+.chapter-card:hover .chapter-arrow{transform:translateX(4px);color:var(--cc)}
+.chapter-done{font-size:1.2rem}
+
+/* ===== QUIZ SCREEN ===== */
+.quiz-header{width:100%;max-width:620px;margin-bottom:1.2rem}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.quiz-subject-badge{
+  display:flex;align-items:center;gap:.4rem;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:50px;padding:.35rem .9rem;
+  font-size:.8rem;font-weight:800;color:var(--qc,#fff);
+}
+.quiz-score-badge{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:50px;padding:.35rem .9rem;
+  font-size:.8rem;font-weight:800;
+}
+.progress-wrap{background:rgba(255,255,255,.1);border-radius:99px;height:8px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--qc,#fff),color-mix(in srgb,var(--qc,#fff) 70%,#fff));border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.progress-text{font-size:.8rem;color:var(--muted);font-weight:700;margin-top:.4rem;text-align:right}
+
+.question-card{
+  width:100%;max-width:620px;
+  background:var(--card2,var(--card));border:2px solid var(--border);
+  border-radius:24px;padding:1.8rem;
+  box-shadow:var(--shadow);
+}
+.question-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.2rem;gap:.8rem}
+.question-text{font-size:clamp(1rem,3vw,1.25rem);font-weight:800;line-height:1.45;flex:1}
+.tts-btn{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:50px;padding:.4rem .9rem;cursor:pointer;
+  font-size:.85rem;font-weight:700;color:var(--muted);
+  transition:all .2s;white-space:nowrap;flex-shrink:0;
+}
+.tts-btn:hover{background:var(--card-hover);color:var(--text)}
+.tts-btn.speaking{color:var(--qc);border-color:var(--qc);animation:pulseSpeaking 1s ease-in-out infinite}
+@keyframes pulseSpeaking{0%,100%{box-shadow:none}50%{box-shadow:0 0 12px var(--qc)}}
+
+.options-grid{display:flex;flex-direction:column;gap:.7rem;margin-top:1rem}
+.option-btn{
+  background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:.9rem 1.1rem;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);
+  text-align:left;transition:all .22s;display:flex;align-items:center;gap:.8rem;
+}
+.option-btn:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:var(--qc);transform:translateX(4px)}
+.option-btn:disabled{cursor:default}
+.option-btn.correct{background:rgba(11,232,129,.15);border-color:#0be881;color:#0be881}
+.option-btn.wrong{background:rgba(255,107,107,.15);border-color:#ff6b6b;color:#ff6b6b}
+.option-letter{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:900;flex-shrink:0;
+  transition:background .22s;
+}
+.option-btn.correct .option-letter{background:#0be881;color:#000}
+.option-btn.wrong .option-letter{background:#ff6b6b;color:#fff}
+
+.text-answer-wrap{display:flex;flex-direction:column;gap:.8rem;margin-top:1rem}
+.text-answer{
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);
+  border-radius:14px;padding:.9rem 1.1rem;
+  font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;color:var(--text);
+  outline:none;transition:border-color .2s;
+  width:100%;
+}
+.text-answer:focus{border-color:var(--qc)}
+.text-answer.correct{border-color:#0be881;background:rgba(11,232,129,.1)}
+.text-answer.wrong{border-color:#ff6b6b;background:rgba(255,107,107,.1)}
+.submit-btn{
+  background:var(--qc,#54a0ff);border:none;border-radius:14px;
+  padding:.9rem;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;
+  color:#000;cursor:pointer;transition:all .22s;
+  box-shadow:0 4px 20px color-mix(in srgb,var(--qc) 40%,transparent);
+}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px color-mix(in srgb,var(--qc) 50%,transparent)}
+
+.feedback-msg{
+  margin-top:1rem;padding:.8rem 1.1rem;border-radius:14px;
+  font-weight:800;font-size:.95rem;text-align:center;
+  animation:popIn .3s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.feedback-msg.correct{background:rgba(11,232,129,.15);color:#0be881;border:1px solid rgba(11,232,129,.3)}
+.feedback-msg.wrong{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)}
+
+.next-btn{
+  margin-top:1.2rem;width:100%;max-width:620px;
+  background:linear-gradient(135deg,var(--qc,#54a0ff),color-mix(in srgb,var(--qc,#54a0ff) 70%,#fff));
+  border:none;border-radius:16px;padding:1rem;
+  font-family:'Fredoka One',cursive;font-size:1.2rem;color:#fff;cursor:pointer;
+  box-shadow:0 6px 24px color-mix(in srgb,var(--qc,#54a0ff) 35%,transparent);
+  transition:all .22s;display:none;
+}
+.next-btn:hover{transform:translateY(-3px);box-shadow:0 10px 32px color-mix(in srgb,var(--qc,#54a0ff) 50%,transparent)}
+.next-btn.visible{display:block;animation:popIn .3s cubic-bezier(.175,.885,.32,1.275)}
+
+.timer-wrap{display:flex;align-items:center;gap:.5rem;justify-content:center;margin-top:.8rem}
+.timer-icon{font-size:1rem}
+.timer-text{font-family:'Fredoka One',cursive;font-size:1.1rem}
+.timer-text.urgent{color:#ff6b6b;animation:pulseSpeaking 1s ease-in-out infinite}
+
+/* ===== RESULTS SCREEN ===== */
+.results-card{
+  width:100%;max-width:520px;
+  background:var(--card);border:2px solid var(--border);
+  border-radius:28px;padding:2rem 1.5rem;text-align:center;
+  box-shadow:var(--shadow);
+}
+.result-emoji{font-size:5rem;margin-bottom:1rem;display:block;animation:bounce 2s ease-in-out infinite}
+.result-title{font-family:'Fredoka One',cursive;font-size:2rem;margin-bottom:.4rem}
+.result-title.great{color:#0be881}
+.result-title.good{color:var(--english)}
+.result-title.try{color:var(--math)}
+.score-circle{
+  width:130px;height:130px;border-radius:50%;
+  border:5px solid var(--qc,#54a0ff);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:1.2rem auto;
+  box-shadow:0 0 35px color-mix(in srgb,var(--qc,#54a0ff) 30%,transparent);
+}
+.score-pts{font-family:'Fredoka One',cursive;font-size:2.2rem;line-height:1}
+.score-total{font-size:.85rem;color:var(--muted);font-weight:700}
+.score-percent{font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--qc)}
+.result-stats{display:flex;justify-content:center;gap:1.5rem;margin:1rem 0}
+.r-stat{text-align:center}
+.r-stat-num{font-family:'Fredoka One',cursive;font-size:1.4rem}
+.r-stat-num.correct{color:#0be881}
+.r-stat-num.wrong{color:var(--math)}
+.r-stat-label{font-size:.75rem;color:var(--muted);font-weight:700}
+
+.badges-section{margin:1.2rem 0}
+.badges-title{font-family:'Fredoka One',cursive;font-size:1.1rem;margin-bottom:.8rem;color:var(--muted)}
+.badges-row{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center}
+.badge-item{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:50px;padding:.4rem .9rem;
+  font-size:.82rem;font-weight:700;
+  display:flex;align-items:center;gap:.4rem;
+  animation:popIn .4s cubic-bezier(.175,.885,.32,1.275);
+}
+.badge-item.new{
+  border-color:var(--english);
+  box-shadow:0 0 15px rgba(255,211,42,.3);
+  animation:popIn .4s cubic-bezier(.175,.885,.32,1.275),glowBadge 2s ease-in-out infinite;
+}
+@keyframes glowBadge{0%,100%{box-shadow:0 0 8px rgba(255,211,42,.3)}50%{box-shadow:0 0 20px rgba(255,211,42,.6)}}
+
+.results-btns{display:flex;flex-direction:column;gap:.8rem;margin-top:1.4rem}
+.result-btn{
+  border:none;border-radius:16px;padding:.9rem;
+  font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;
+  transition:all .22s;
+}
+.result-btn.primary{
+  background:linear-gradient(135deg,var(--qc,#54a0ff),color-mix(in srgb,var(--qc,#54a0ff) 70%,#fff));
+  color:#fff;box-shadow:0 4px 20px color-mix(in srgb,var(--qc) 35%,transparent);
+}
+.result-btn.primary:hover{transform:translateY(-2px)}
+.result-btn.secondary{background:var(--card);border:1px solid var(--border);color:var(--muted)}
+.result-btn.secondary:hover{background:var(--card-hover);color:var(--text)}
+
+/* ===== ACHIEVEMENTS FLOATING ===== */
+.achievement-toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);
+  background:linear-gradient(135deg,#ffd32a,#ff9f43);
+  color:#000;border-radius:50px;padding:.7rem 1.5rem;
+  font-family:'Fredoka One',cursive;font-size:1.1rem;
+  z-index:999;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+  box-shadow:0 8px 32px rgba(255,211,42,.4);
+  white-space:nowrap;
+}
+.achievement-toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:400px){
+  .class-grid{grid-template-columns:repeat(3,1fr);gap:.6rem}
+  .class-num{font-size:2rem}
+  .subjects-grid{grid-template-columns:1fr}
+}
+@media(min-width:600px){
+  .options-grid{display:grid;grid-template-columns:1fr 1fr}
+}
+
+/* ===== CONFETTI PIECE ===== */
+.confetti{
+  position:fixed;pointer-events:none;z-index:998;
+  width:10px;height:10px;border-radius:2px;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
+}
+
+/* ===== PWA INSTALL BANNER ===== */
+#pwa-install-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:997;
+  background:linear-gradient(135deg,#162150,#0d1b3e);
+  border-top:2px solid rgba(255,255,255,.15);
+  padding:1rem 1.2rem;
+  display:none;align-items:center;gap:1rem;
+  box-shadow:0 -8px 32px rgba(0,0,0,.4);
+  animation:slideUpBanner .4s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes slideUpBanner{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#pwa-install-banner.show{display:flex}
+.pwa-banner-icon{font-size:2.5rem;flex-shrink:0}
+.pwa-banner-text{flex:1}
+.pwa-banner-title{font-family:'Fredoka One',cursive;font-size:1.05rem;color:var(--text)}
+.pwa-banner-sub{font-size:.78rem;color:var(--muted);font-weight:600;margin-top:.1rem}
+.pwa-install-btn{
+  background:linear-gradient(135deg,#0be881,#48dbfb);
+  border:none;border-radius:50px;padding:.55rem 1.1rem;
+  font-family:'Fredoka One',cursive;font-size:.95rem;color:#000;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+  box-shadow:0 4px 16px rgba(11,232,129,.35);
+  transition:all .2s;
+}
+.pwa-install-btn:hover{transform:scale(1.05)}
+.pwa-dismiss-btn{
+  background:none;border:none;color:var(--muted);
+  font-size:1.3rem;cursor:pointer;padding:.2rem;flex-shrink:0;
+  transition:color .2s;
+}
+.pwa-dismiss-btn:hover{color:var(--text)}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--navy)}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
+</style>
+</head>
+<body>
+
+<!-- Stars Background -->
+<div id="stars-bg"></div>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-logo">EduSmart</div>
+  <div style="font-size:3rem;margin-bottom:1.5rem">🚀</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-text">Przygotowuję lekcje…</div>
+</div>
+
+<!-- Achievement Toast -->
+<div class="achievement-toast" id="achievement-toast">🏅 Nowa odznaka!</div>
+
+<!-- ============================
+     SCREEN: HOME
+     ============================ -->
+<div class="screen active" id="screen-home">
+  <div class="home-logo">EduSmart</div>
+  <div class="home-sub">✨ Nauka, która wciąga!</div>
+  <div class="home-tagline">Wybierz klasę i zacznij przygodę z wiedzą</div>
+  <div class="home-mascot">🦉</div>
+  <div class="class-section-title">Wybierz swoją klasę</div>
+  <div class="class-grid">
+    <div class="class-card" data-class="4" onclick="selectClass(4)">
+      <div class="class-num">4</div>
+      <div class="class-label">Klasa</div>
+    </div>
+    <div class="class-card" data-class="5" onclick="selectClass(5)">
+      <div class="class-num">5</div>
+      <div class="class-label">Klasa</div>
+    </div>
+    <div class="class-card" data-class="6" onclick="selectClass(6)">
+      <div class="class-num">6</div>
+      <div class="class-label">Klasa</div>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num" id="stat-tests">0</div>
+      <div class="stat-label">🎯 Testów</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="stat-score">0</div>
+      <div class="stat-label">⭐ Punktów</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="stat-badges">0</div>
+      <div class="stat-label">🏅 Odznak</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN: SUBJECTS
+     ============================ -->
+<div class="screen" id="screen-subjects">
+  <button class="back-btn" onclick="goBack('screen-home')">← Wróć</button>
+  <div class="screen-title" id="subj-title">Klasa 4</div>
+  <div class="screen-subtitle">Wybierz przedmiot do nauki</div>
+  <div class="subjects-grid">
+    <div class="subject-card" data-subj="math" onclick="selectSubject('math')">
+      <span class="subject-icon">🔢</span>
+      <div class="subject-name">Matematyka</div>
+      <div class="subject-desc">Liczby i zadania</div>
+    </div>
+    <div class="subject-card" data-subj="polish" onclick="selectSubject('polish')">
+      <span class="subject-icon">📖</span>
+      <div class="subject-name">Język Polski</div>
+      <div class="subject-desc">Czytanie i gramatyka</div>
+    </div>
+    <div class="subject-card" data-subj="english" onclick="selectSubject('english')">
+      <span class="subject-icon">🌍</span>
+      <div class="subject-name">Angielski</div>
+      <div class="subject-desc">English language</div>
+    </div>
+    <div class="subject-card" data-subj="nature" onclick="selectSubject('nature')">
+      <span class="subject-icon">🌿</span>
+      <div class="subject-name">Przyroda</div>
+      <div class="subject-desc">Natura i nauka</div>
+    </div>
+    <div class="subject-card" data-subj="history" onclick="selectSubject('history')" style="grid-column:1/-1;max-width:240px;margin:0 auto;width:100%">
+      <span class="subject-icon">🏰</span>
+      <div class="subject-name">Historia</div>
+      <div class="subject-desc">Dawne czasy</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN: CHAPTERS
+     ============================ -->
+<div class="screen" id="screen-chapters">
+  <button class="back-btn" onclick="goBack('screen-subjects')">← Wróć</button>
+  <div class="screen-title" id="chap-title">Matematyka</div>
+  <div class="screen-subtitle" id="chap-subtitle">Wybierz rozdział</div>
+  <div class="chapters-list" id="chapters-list"></div>
+</div>
+
+<!-- ============================
+     SCREEN: QUIZ
+     ============================ -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-header">
+    <div class="quiz-top">
+      <div class="quiz-subject-badge" id="quiz-badge">🔢 Matematyka</div>
+      <div class="quiz-score-badge">⭐ <span id="live-score">0</span> pkt</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="progress-text" id="progress-text">Pytanie 1 z 7</div>
+  </div>
+
+  <div class="question-card" id="question-card">
+    <div class="question-top">
+      <div class="question-text" id="question-text">Ładowanie pytania…</div>
+      <button class="tts-btn" id="tts-btn" onclick="speakQuestion()">🔊 Czytaj</button>
+    </div>
+    <div id="options-container"></div>
+    <div class="feedback-msg" id="feedback-msg" style="display:none"></div>
+  </div>
+
+  <div class="timer-wrap" id="timer-wrap" style="display:none">
+    <span class="timer-icon">⏱️</span>
+    <span class="timer-text" id="timer-text">30</span>
+  </div>
+
+  <button class="next-btn" id="next-btn" onclick="nextQuestion()">
+    Następne pytanie →
+  </button>
+</div>
+
+<!-- ============================
+     SCREEN: RESULTS
+     ============================ -->
+<div class="screen" id="screen-results">
+  <div class="results-card">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">Świetnie!</div>
+    <div id="result-subtitle" style="color:var(--muted);font-weight:700;font-size:.95rem;margin-bottom:.5rem"></div>
+    <div class="score-circle">
+      <div class="score-pts"><span id="res-pts">0</span></div>
+      <div class="score-total">z <span id="res-total">7</span> pkt</div>
+      <div class="score-percent" id="res-percent">100%</div>
+    </div>
+    <div class="result-stats">
+      <div class="r-stat">
+        <div class="r-stat-num correct" id="res-correct">0</div>
+        <div class="r-stat-label">✅ Poprawne</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-num wrong" id="res-wrong">0</div>
+        <div class="r-stat-label">❌ Błędy</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-num" id="res-time" style="color:var(--polish)">0s</div>
+        <div class="r-stat-label">⏱️ Czas</div>
+      </div>
+    </div>
+    <div class="badges-section" id="badges-section">
+      <div class="badges-title">🏅 Twoje odznaki</div>
+      <div class="badges-row" id="badges-row"></div>
+    </div>
+    <div class="results-btns">
+      <button class="result-btn primary" onclick="retryQuiz()">🔄 Spróbuj jeszcze raz</button>
+      <button class="result-btn secondary" onclick="goBack('screen-chapters')">📚 Inne rozdziały</button>
+      <button class="result-btn secondary" onclick="goBack('screen-home')">🏠 Strona główna</button>
+    </div>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner">
+  <div class="pwa-banner-icon">📱</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Zainstaluj EduSmart!</div>
+    <div class="pwa-banner-sub">Działa offline · Jak prawdziwa aplikacja</div>
+  </div>
+  <button class="pwa-install-btn" id="pwa-install-btn">⬇️ Zainstaluj</button>
+  <button class="pwa-dismiss-btn" id="pwa-dismiss-btn">✕</button>
+</div>
+
+<script>
+// ============================================================
+//  QUESTION DATABASE
+// ============================================================
+const DB = {
+  4: {
+    math: {
+      name:'Matematyka', icon:'🔢', color:'var(--math)',
+      chapters: [
+        {
+          name:'Dodawanie i odejmowanie', icon:'➕', questions:[
+            {type:'choice',q:'Ile to 345 + 256?',opts:['601','591','611','596'],a:'601'},
+            {type:'choice',q:'Ile to 800 – 357?',opts:['443','453','447','463'],a:'443'},
+            {type:'text',q:'Oblicz: 1000 – 567 = ?',a:'433'},
+            {type:'choice',q:'Ile to 729 + 183?',opts:['912','902','922','912'],a:'912'},
+            {type:'text',q:'Ile to 650 + 350?',a:'1000'},
+            {type:'choice',q:'Janek miał 450 zł i wydał 178 zł. Ile mu zostało?',opts:['272','282','262','252'],a:'272'},
+            {type:'choice',q:'Ile to 999 + 1?',opts:['1000','1001','999','998'],a:'1000'},
+          ]
+        },
+        {
+          name:'Mnożenie i dzielenie', icon:'✖️', questions:[
+            {type:'choice',q:'Ile to 6 × 7?',opts:['42','36','48','54'],a:'42'},
+            {type:'text',q:'Ile to 8 × 9?',a:'72'},
+            {type:'choice',q:'Ile to 56 ÷ 7?',opts:['8','7','9','6'],a:'8'},
+            {type:'choice',q:'Ile to 12 × 4?',opts:['48','42','52','44'],a:'48'},
+            {type:'text',q:'Ile to 81 ÷ 9?',a:'9'},
+            {type:'choice',q:'Ile to 7 × 8?',opts:['56','54','64','48'],a:'56'},
+            {type:'choice',q:'Do autobusu weszło 9 rzędów po 4 osoby. Ile osób w autobusie?',opts:['36','34','32','38'],a:'36'},
+          ]
+        },
+        {
+          name:'Ułamki – pierwsze kroki', icon:'🍕', questions:[
+            {type:'choice',q:'Jak czytamy ułamek 1/2?',opts:['jedna druga','jeden dwa','pół dwa','dwa pierwsze'],a:'jedna druga'},
+            {type:'choice',q:'Ile to 1/2 + 1/2?',opts:['1','2','1/4','3/4'],a:'1'},
+            {type:'text',q:'Pizza jest podzielona na 4 części. Zjadłeś 2. Ile to ułamek? (1/?)' ,a:'2'},
+            {type:'choice',q:'Który ułamek jest większy?',opts:['3/4','1/4','2/4','1/2'],a:'3/4'},
+            {type:'choice',q:'Ile to 1/4 + 2/4?',opts:['3/4','1/2','1','2/8'],a:'3/4'},
+            {type:'text',q:'Mam 1 całą i pół. Ile to razem? Wpisz jako liczbę mieszaną np. 1,5',a:'1,5'},
+            {type:'choice',q:'Który ułamek równa się 1/2?',opts:['2/4','2/3','1/3','3/6... 2/4 też!'],a:'2/4'},
+          ]
+        },
+        {
+          name:'Figury geometryczne', icon:'📐', questions:[
+            {type:'choice',q:'Ile boków ma kwadrat?',opts:['4','3','5','6'],a:'4'},
+            {type:'choice',q:'Obwód kwadratu o boku 5 cm = ?',opts:['20 cm','15 cm','25 cm','10 cm'],a:'20 cm'},
+            {type:'text',q:'Pole prostokąta o wymiarach 4×3 cm = ? cm²',a:'12'},
+            {type:'choice',q:'Ile kątów ma trójkąt?',opts:['3','4','5','2'],a:'3'},
+            {type:'choice',q:'Jak nazywa się figura o 6 bokach?',opts:['Sześciokąt','Pięciokąt','Ośmiokąt','Czworokąt'],a:'Sześciokąt'},
+            {type:'text',q:'Obwód prostokąta 6cm × 4cm = ? cm',a:'20'},
+            {type:'choice',q:'Koło to figura…',opts:['Bez kątów','Z 1 kątem','Z 4 kątami','Z 2 kątami'],a:'Bez kątów'},
+          ]
+        }
+      ]
+    },
+    polish: {
+      name:'Język Polski', icon:'📖', color:'var(--polish)',
+      chapters:[
+        {
+          name:'Części mowy', icon:'🔤', questions:[
+            {type:'choice',q:'Jak nazywamy część mowy oznaczającą czynność?',opts:['Czasownik','Rzeczownik','Przymiotnik','Przysłówek'],a:'Czasownik'},
+            {type:'choice',q:'"Piękny" to przykład…',opts:['Przymiotnika','Rzeczownika','Czasownika','Liczebnika'],a:'Przymiotnika'},
+            {type:'text',q:'Podaj rzeczownik oznaczający pojazd wodny (zaczyna się na "ł")',a:'łódź'},
+            {type:'choice',q:'Ile jest rodzajów rodzajów gramatycznych w języku polskim?',opts:['3','2','4','5'],a:'3'},
+            {type:'choice',q:'Co oznacza czasownik "biec"?',opts:['Czynność poruszania się','Kolor','Przedmiot','Uczucie'],a:'Czynność poruszania się'},
+            {type:'text',q:'Jak nazywamy słowo zastępujące rzeczownik? Za-_______-nik',a:'Zaimek'},
+            {type:'choice',q:'"Bardzo" to przykład…',opts:['Przysłówka','Przymiotnika','Czasownika','Spójnika'],a:'Przysłówka'},
+          ]
+        },
+        {
+          name:'Zdania i interpunkcja', icon:'✏️', questions:[
+            {type:'choice',q:'Czym kończymy zdanie oznajmujące?',opts:['Kropką','Wykrzyknikiem','Pytajnikiem','Przecinkiem'],a:'Kropką'},
+            {type:'choice',q:'Jakim znakiem kończymy pytanie?',opts:['?','!','.','...'],a:'?'},
+            {type:'text',q:'Ile zdań jest w tekście: "Ala ma kota. Kot jest rudy."',a:'2'},
+            {type:'choice',q:'Zdanie "Chodź tu!" to zdanie…',opts:['Rozkazujące','Pytające','Oznajmujące','Wykrzyknikowe'],a:'Rozkazujące'},
+            {type:'choice',q:'Podmiot w zdaniu to…',opts:['O kim/czym mówi zdanie','Czynność','Opis','Miejsce'],a:'O kim/czym mówi zdanie'},
+            {type:'choice',q:'Czym oddzielamy wyrazy w wyliczeniu?',opts:['Przecinkiem','Kropką','Dwukropkiem','Myślnikiem'],a:'Przecinkiem'},
+            {type:'text',q:'Uzupełnij: "Mam psa___ kota___ i rybkę." – jaki znak przed "kota"?',a:'przecinek'},
+          ]
+        },
+        {
+          name:'Ortografia polska', icon:'📝', questions:[
+            {type:'choice',q:'Jak piszemy: "u" czy "ó" w słowie kró_?',opts:['król (ó)','krul (u)','krul','krol'],a:'król (ó)'},
+            {type:'text',q:'Wpisz poprawnie: "rz" czy "ż" – "bie__ący"',a:'bieżący'},
+            {type:'choice',q:'Małą czy dużą literą piszemy nazwy miesięcy?',opts:['Małą','Dużą','Obie formy są dobre','Zależy od kontekstu'],a:'Małą'},
+            {type:'choice',q:'Jak piszemy "ch" lub "h" w słowie "_oryzont"?',opts:['Horyzont (h)','Choryzont (ch)','Huryzont','Koryzont'],a:'Horyzont (h)'},
+            {type:'text',q:'Uzupełnij: "rz" czy "sz" – "wa__awa" (stolica Polski)',a:'Warszawa'},
+            {type:'choice',q:'Nazwy krajów pisze się…',opts:['Dużą literą','Małą literą','Bez reguł','Zależy od języka'],a:'Dużą literą'},
+            {type:'choice',q:'Jak piszemy: "nie" z rzeczownikami?',opts:['Razem: niedobro','Osobno: nie dobro','Zależy','Zawsze osobno'],a:'Razem: niedobro'},
+          ]
+        },
+        {
+          name:'Czasownik – odmiana i bezokolicznik', icon:'⏱️', questions:[
+            {type:'choice',q:'Bezokoliczniki to formy czasownika, w których…',opts:['nie można określić osoby','można określić osobę','można określić liczbę','można określić czas'],a:'nie można określić osoby'},
+            {type:'choice',q:'Jakie zakończenia mają bezokoliczniki?',opts:['-ść, -źć, -c','-ę, -ą, -emy','-łem, -łam, -ło','-sz, -my, -cie'],a:'-ść, -źć, -c'},
+            {type:'choice',q:'Które zdanie zawiera bezokolicznikową formę czasownika?',opts:['Trzeba czytać lektury.','Zwykle zasypiam późno.','Lubię niespodzianki.','Czasem robię błędy.'],a:'Trzeba czytać lektury.'},
+            {type:'choice',q:'W którym zdaniu NIE można określić wykonawcy czynności?',opts:['Ściemniać się.','Dobrze zrozumiał zadanie.','Uśmiechnijcie się.','Pojechały do centrum.'],a:'Ściemniać się.'},
+            {type:'choice',q:'Jeśli używamy formy „uczyłem", mówimy o…',opts:['pierwszej osobie liczby pojedynczej','pierwszej osobie liczby mnogiej','drugiej osobie liczby pojedynczej','trzeciej osobie liczby pojedynczej'],a:'pierwszej osobie liczby pojedynczej'},
+            {type:'choice',q:'W zdaniu „Wróżka zamieniła żabę w księżniczkę" – czasownik „zamieniła" jest w liczbie…',opts:['pojedynczej, rodzaj żeński','mnogiej, rodzaj żeński','pojedynczej, rodzaj nijaki','mnogiej, rodzaj nijaki'],a:'pojedynczej, rodzaj żeński'},
+            {type:'choice',q:'„Przyniosłeś mi obiecaną książkę?" – czasownik występuje w…',opts:['2. osobie l. poj. czasu przeszłego','1. osobie l. poj. czasu teraźniejszego','2. osobie l. mn. czasu przyszłego','1. osobie l. mn. czasu przeszłego'],a:'2. osobie l. poj. czasu przeszłego'},
+            {type:'choice',q:'W którym zestawie jest czasownik w 3. os. l. mn. rodzaju niemęskoosobowego?',opts:['tańczyły, wyjechali, poleciało','prostuje, zasłaniają, strzelali','uśmiechnęli się, lecą, pracowało','staliśmy, skakaliście, upieczemy'],a:'tańczyły, wyjechali, poleciało'},
+            {type:'choice',q:'Oceń: „Czasownik odmienia się przez osoby, liczby, czasy, rodzaje." To zdanie jest…',opts:['Prawdziwe','Fałszywe','Częściowo prawdziwe','Nie dotyczy'],a:'Prawdziwe'},
+            {type:'choice',q:'W którym zdaniu wykonawcą czynności jest 3. osoba liczby mnogiej?',opts:['Wyszli godzinę wcześniej niż zamierzali.','Nie odkładaj tego na jutro.','Wybieramy się na wycieczkę.','Pojechały do centrum na zakupy.'],a:'Wyszli godzinę wcześniej niż zamierzali.'},
+          ]
+        },
+        {
+          name:'Literatura i lektury', icon:'📚', questions:[
+            {type:'choice',q:'Kto napisał "Akademię Pana Kleksa"?',opts:['Jan Brzechwa','Julian Tuwim','Henryk Sienkiewicz','Adam Mickiewicz'],a:'Jan Brzechwa'},
+            {type:'choice',q:'Kim jest Hobbit w powieści Tolkiena?',opts:['Małym stworzeniem','Krasnoludkiem','Elfem','Człowiekiem'],a:'Małym stworzeniem'},
+            {type:'text',q:'Kto napisał wiersz "Lokomotywa"? (imię i nazwisko)',a:'Julian Tuwim'},
+            {type:'choice',q:'Bajka to gatunek…',opts:['Prozaiczny lub poetycki','Tylko poetycki','Tylko dramatyczny','Naukowy'],a:'Prozaiczny lub poetycki'},
+            {type:'choice',q:'"Kubuś Puchatek" to bohater stworzony przez…',opts:['A.A. Milne','Grimm','Andersen','Perrault'],a:'A.A. Milne'},
+            {type:'choice',q:'Co to jest metafora?',opts:['Przenośnia językowa','Rymy w wierszu','Porównanie z "jak"','Zdrobnienie'],a:'Przenośnia językowa'},
+            {type:'text',q:'Jak nazywamy osobę mówiącą w wierszu? Pod_______',a:'Podmiot liryczny'},
+          ]
+        }
+      ]
+    },
+    english: {
+      name:'Angielski', icon:'🌍', color:'var(--english)',
+      chapters:[
+        {
+          name:'Kolory i liczby', icon:'🎨', questions:[
+            {type:'choice',q:'Co znaczy "red"?',opts:['Czerwony','Niebieski','Zielony','Żółty'],a:'Czerwony'},
+            {type:'text',q:'Przetłumacz na angielski: "pięć"',a:'five'},
+            {type:'choice',q:'Ile to "twelve"?',opts:['12','20','11','13'],a:'12'},
+            {type:'choice',q:'Jak po angielsku "żółty"?',opts:['yellow','green','blue','orange'],a:'yellow'},
+            {type:'text',q:'Wpisz po angielsku kolor: niebieski',a:'blue'},
+            {type:'choice',q:'Co znaczy "twenty"?',opts:['20','12','2','200'],a:'20'},
+            {type:'choice',q:'Jak napisać po angielsku "sto"?',opts:['hundred','thousand','ten','fifty'],a:'hundred'},
+          ]
+        },
+        {
+          name:'Zwierzęta (Animals)', icon:'🐾', questions:[
+            {type:'choice',q:'Co znaczy "dog"?',opts:['Pies','Kot','Ptak','Ryba'],a:'Pies'},
+            {type:'text',q:'Przetłumacz: "kot" na angielski',a:'cat'},
+            {type:'choice',q:'Jak po angielsku "koń"?',opts:['horse','cow','pig','sheep'],a:'horse'},
+            {type:'choice',q:'Co znaczy "bird"?',opts:['Ptak','Niedźwiedź','Jeż','Owca'],a:'Ptak'},
+            {type:'text',q:'Wpisz po angielsku: "słoń"',a:'elephant'},
+            {type:'choice',q:'Co znaczy "fish"?',opts:['Ryba','Żaba','Wąż','Krab'],a:'Ryba'},
+            {type:'choice',q:'Jak po angielsku "królik"?',opts:['rabbit','dog','mouse','rat'],a:'rabbit'},
+          ]
+        },
+        {
+          name:'Rodzina i dom (Family)', icon:'👨‍👩‍👧', questions:[
+            {type:'choice',q:'Co znaczy "mother"?',opts:['Mama','Tata','Siostra','Brat'],a:'Mama'},
+            {type:'text',q:'Przetłumacz: "ojciec" po angielsku',a:'father'},
+            {type:'choice',q:'Jak po angielsku "siostra"?',opts:['sister','brother','aunt','uncle'],a:'sister'},
+            {type:'choice',q:'Co znaczy "grandma"?',opts:['Babcia','Dziadek','Ciocia','Wujek'],a:'Babcia'},
+            {type:'text',q:'Wpisz po angielsku: "brat"',a:'brother'},
+            {type:'choice',q:'Jak po angielsku "dom"?',opts:['house','school','park','shop'],a:'house'},
+            {type:'choice',q:'Co znaczy "kitchen"?',opts:['Kuchnia','Sypialnia','Łazienka','Salon'],a:'Kuchnia'},
+          ]
+        },
+        {
+          name:'Czas teraźniejszy (Present Simple)', icon:'⏰', questions:[
+            {type:'choice',q:'Uzupełnij: "She ___ a cat." (mieć)',opts:['has','have','is','are'],a:'has'},
+            {type:'choice',q:'Uzupełnij: "I ___ to school." (chodzić)',opts:['go','goes','am going','is going'],a:'go'},
+            {type:'text',q:'Przetłumacz: "Lubię pizzę." (I ... pizza)',a:'I like pizza'},
+            {type:'choice',q:'Gdzie dodajemy "s" w Present Simple?',opts:['He/She/It','I/You','We/They','Wszędzie'],a:'He/She/It'},
+            {type:'choice',q:'Jak zapytać: "Czy lubisz koty?"',opts:['Do you like cats?','Are you like cats?','You like cats?','Does you like cats?'],a:'Do you like cats?'},
+            {type:'text',q:'Uzupełnij: "He ___ football." (grać) – 1 słowo',a:'plays'},
+            {type:'choice',q:'Przeczenie Present Simple to…',opts:["don't/doesn't",'am not','not','no'],a:"don't/doesn't"},
+          ]
+        }
+      ]
+    },
+    nature: {
+      name:'Przyroda', icon:'🌿', color:'var(--nature)',
+      chapters:[
+        {
+          name:'Plany i mapy (Dział 6)', icon:'🗺️', questions:[
+            {type:'choice',q:'Plan to obraz widzianego z góry przedmiotu lub niewielkiego obszaru. Mapa natomiast to…',opts:['Obraz widzianego z góry dużego obszaru lub całej Ziemi','To samo co plan, tylko większy','Rysunek wykonany ręcznie','Zdjęcie z satelity'],a:'Obraz widzianego z góry dużego obszaru lub całej Ziemi'},
+            {type:'choice',q:'Jakie są najważniejsze elementy planów i map?',opts:['Tytuł, skala, legenda','Tytuł, autor, data','Skala, zdjęcia, opis','Legenda, kolory, ramka'],a:'Tytuł, skala, legenda'},
+            {type:'choice',q:'Co to jest skala mapy?',opts:['Stosunek odległości na mapie do rzeczywistej odległości w terenie','Wykaz znaków kartograficznych','Tytuł mapy','Kierunek północny'],a:'Stosunek odległości na mapie do rzeczywistej odległości w terenie'},
+            {type:'choice',q:'Skala 1 : 50 oznacza, że 1 cm na planie odpowiada w rzeczywistości…',opts:['50 cm','5 cm','500 cm','1 cm'],a:'50 cm'},
+            {type:'choice',q:'Jeśli na mapie nie ma strzałki oznaczającej północ, to przyjmujemy, że północ jest…',opts:['U góry arkusza','U dołu arkusza','Po lewej stronie','Po prawej stronie'],a:'U góry arkusza'},
+            {type:'choice',q:'Na mapie bez strzałki – gdzie jest wschód?',opts:['Po prawej stronie','Po lewej stronie','U góry','U dołu'],a:'Po prawej stronie'},
+            {type:'choice',q:'Znaki kartograficzne na mapach i planach są obrazem obiektów w terenie. Ich znaczenie wyjaśnione jest w…',opts:['Legendzie mapy','Tytule mapy','Skali mapy','Ramce mapy'],a:'Legendzie mapy'},
+            {type:'choice',q:'Aby zorientować plan lub mapę, należy ułożyć go tak, żeby…',opts:['Kierunek północny na planie zgadzał się z kierunkiem północnym w terenie','Tytuł był skierowany ku nam','Legenda była po prawej stronie','Skala była widoczna'],a:'Kierunek północny na planie zgadzał się z kierunkiem północnym w terenie'},
+            {type:'choice',q:'Do orientowania mapy w terenie możemy użyć…',opts:['Kompasu lub obiektów w okolicy','Tylko termometru','Wyłącznie GPS','Linijki i ołówka'],a:'Kompasu lub obiektów w okolicy'},
+            {type:'text',q:'Aby narysować plan, wszystkie wymiary i odległości dzielimy przez tę samą liczbę. Jak ta liczba wpływa na plan? Liczba ta to mianownik ______',a:'skali'},
+          ]
+        },
+        {
+          name:'Krajobraz i jego składniki (Dział 7)', icon:'🏔️', questions:[
+            {type:'choice',q:'Krajobraz to wygląd fragmentu powierzchni Ziemi. Które z wymienionych NIE jest składnikiem krajobrazu?',opts:['Klimat kontynentalny','Ukształtowanie terenu','Skały','Szata roślinna'],a:'Klimat kontynentalny'},
+            {type:'choice',q:'Doliny i kotliny to formy terenu…',opts:['Wklęsłe (zagłębienia)','Wypukłe (wzniesienia)','Równinne','Płaskie'],a:'Wklęsłe (zagłębienia)'},
+            {type:'choice',q:'Pagórki, wzgórza i góry to formy terenu…',opts:['Wypukłe (wzniesienia)','Wklęsłe','Równinne','Podmorskie'],a:'Wypukłe (wzniesienia)'},
+            {type:'choice',q:'Granit, wapień i piaskowiec to przykłady skał…',opts:['Litych','Zwięzłych','Luźnych','Organicznych'],a:'Litych'},
+            {type:'choice',q:'Piasek i żwir to przykłady skał…',opts:['Luźnych','Litych','Zwięzłych','Magmowych'],a:'Luźnych'},
+            {type:'choice',q:'Gleba składa się ze składników nieożywionych: okruchów skalnych, próchnicy, powietrza i wody oraz…',opts:['Organizmów glebowych (składniki ożywione)','Soli mineralnych','Metali ciężkich','Związków chemicznych'],a:'Organizmów glebowych (składniki ożywione)'},
+            {type:'choice',q:'Rzeki, potoki, strumienie i kanały to wody…',opts:['Słodkie płynące','Słodkie stojące','Słone','Podziemne'],a:'Słodkie płynące'},
+            {type:'choice',q:'Jeziora, bagna i stawy to wody…',opts:['Słodkie stojące','Słodkie płynące','Słone','Morskie'],a:'Słodkie stojące'},
+            {type:'choice',q:'Krajobraz kulturowy powstaje w wyniku…',opts:['Przekształcenia krajobrazu naturalnego przez człowieka','Działania sił przyrody','Zmian klimatu','Erupcji wulkanów'],a:'Przekształcenia krajobrazu naturalnego przez człowieka'},
+            {type:'choice',q:'Które z wymienionych jest formą ochrony przyrody?',opts:['Park narodowy','Centrum handlowe','Fabryka','Lotnisko'],a:'Park narodowy'},
+          ]
+        },
+        {
+          name:'Życie w wodzie (Dział 8 – woda)', icon:'🐟', questions:[
+            {type:'choice',q:'Jaki jest opór środowiska w wodzie w porównaniu do lądu?',opts:['Duży (większy niż na lądzie)','Mały (mniejszy niż na lądzie)','Taki sam','Nie ma znaczenia'],a:'Duży (większy niż na lądzie)'},
+            {type:'choice',q:'Która cecha umożliwia zwierzętom życie w wodzie?',opts:['Opływowy kształt ciała','Skrzydła','Sierść','Ciepłokrwistość'],a:'Opływowy kształt ciała'},
+            {type:'choice',q:'Głębokość wody, do jakiej dociera światło, stanowi granicę dla organizmów przeprowadzających…',opts:['Fotosyntezę','Oddychanie','Rozmnażanie','Trawienie'],a:'Fotosyntezę'},
+            {type:'choice',q:'Zimą w głębokich rzekach i jeziorach woda nie zamarza do dna. Co to umożliwia?',opts:['Przetrwanie żyjących w nich organizmów','Szybszy przepływ wody','Lepszy dostęp tlenu','Rozwój planktonu'],a:'Przetrwanie żyjących w nich organizmów'},
+            {type:'choice',q:'Plankton to drobne rośliny i zwierzęta, które…',opts:['Nie potrafią samodzielnie przeciwstawić się prądom wody','Pływają szybko pod prąd','Żyją tylko na dnie','Są widoczne gołym okiem'],a:'Nie potrafią samodzielnie przeciwstawić się prądom wody'},
+            {type:'choice',q:'Jak nazywa się bieg rzeki, w którym szybkość wody jest największa?',opts:['Bieg górny','Bieg środkowy','Bieg dolny','Bieg ujściowy'],a:'Bieg górny'},
+            {type:'choice',q:'W biegu dolnym rzeki dno pokryte jest głównie…',opts:['Piaskiem i mułem','Kamieniami różnej wielkości','Piaskiem i żwirem','Skałami litymi'],a:'Piaskiem i mułem'},
+            {type:'choice',q:'Jak nazywamy krainę rybną rzeki w biegu górnym?',opts:['Kraina pstrąga i lipienia','Kraina brzany','Kraina leszcza','Kraina karpia'],a:'Kraina pstrąga i lipienia'},
+            {type:'choice',q:'W głębokim jeziorze wyróżniamy trzy strefy. Najlepsze warunki do życia organizmów panują w strefach…',opts:['Przybrzeżnej i otwartej toni wodnej','Tylko w strefie głębokiej','Tylko w strefie przybrzeżnej','W każdej strefie jednakowo'],a:'Przybrzeżnej i otwartej toni wodnej'},
+            {type:'choice',q:'Chlorella i skrętnica to przykłady…',opts:['Roślin planktonowych','Zwierząt planktonowych','Ryb słodkowodnych','Roślin zanurzonch'],a:'Roślin planktonowych'},
+          ]
+        },
+        {
+          name:'Las, łąka i pole (Dział 8 – ląd)', icon:'🌳', questions:[
+            {type:'choice',q:'Jakie typy lasów rosną w Polsce?',opts:['Iglaste, liściaste i mieszane','Tylko tropikalne i liściaste','Iglaste i równikowe','Tylko mieszane'],a:'Iglaste, liściaste i mieszane'},
+            {type:'choice',q:'Które z wymienionych drzew jest liściaste?',opts:['Lipa','Sosna','Świerk','Modrzew'],a:'Lipa'},
+            {type:'choice',q:'Które z wymienionych drzew jest iglaste?',opts:['Świerk','Dąb','Brzoza','Buk'],a:'Świerk'},
+            {type:'choice',q:'Ile warstw tworzą rośliny w lesie?',opts:['4','2','3','5'],a:'4'},
+            {type:'choice',q:'Która warstwa lasu ma najmniej światła?',opts:['Ściółka','Korony drzew','Podszyt','Runo leśne'],a:'Ściółka'},
+            {type:'choice',q:'Co dominuje wśród roślin zielnych na łące?',opts:['Trawy','Drzewa','Krzewy','Mchy'],a:'Trawy'},
+            {type:'choice',q:'Pszenica, żyto, owies i kukurydza to rośliny…',opts:['Zbożowe','Warzywne','Oleiste','Okopowe'],a:'Zbożowe'},
+            {type:'choice',q:'Len, słonecznik i rzepak to rośliny…',opts:['Oleiste','Zbożowe','Warzywne','Lecznicze'],a:'Oleiste'},
+            {type:'choice',q:'Chwasty są szkodliwe dla upraw, bo…',opts:['Konkurują z roślinami uprawnymi o światło, wodę i miejsce','Produkują toksyny','Zajmują dużo miejsca w glebie','Przyciągają szkodniki'],a:'Konkurują z roślinami uprawnymi o światło, wodę i miejsce'},
+            {type:'choice',q:'Które zwierzę jest przykładem szkodnika roślin uprawnych?',opts:['Stonka ziemniaczana','Biedronka','Pszczoła','Dżdżownica'],a:'Stonka ziemniaczana'},
+          ]
+        }
+      ]
+    },
+    history: {
+      name:'Historia', icon:'🏰', color:'var(--history)',
+      chapters:[
+        {
+          name:'Historia i jej źródła (Rozdz. I)', icon:'📜', questions:[
+            {type:'choice',q:'Nauka zajmująca się badaniem przeszłości to…',opts:['Historia','Baśń','Legenda','Geografia'],a:'Historia'},
+            {type:'choice',q:'Opowieść o fantastycznych postaciach zawierająca elementy magii to…',opts:['Baśń','Legenda','Historia','Kronika'],a:'Baśń'},
+            {type:'choice',q:'Opowieść, w której występują zarówno prawdziwe, jak i zmyślone postacie to…',opts:['Legenda','Baśń','Kronika','Historia'],a:'Legenda'},
+            {type:'choice',q:'Które z wymienionych źródeł historycznych jest NIEPISANE?',opts:['Miecz','Pamiętnik','Gazeta','List'],a:'Miecz'},
+            {type:'choice',q:'Data narodzin Jezusa Chrystusa stanowi…',opts:['Początek naszej ery','Koniec prehistorii','Początek średniowiecza','Koniec I tysiąclecia'],a:'Początek naszej ery'},
+            {type:'choice',q:'Prawidłowa kolejność epok historycznych od najwcześniejszej to…',opts:['Starożytność, średniowiecze, nowożytność, współczesność','Średniowiecze, starożytność, nowożytność, współczesność','Nowożytność, starożytność, średniowiecze, współczesność','Współczesność, nowożytność, starożytność, średniowiecze'],a:'Starożytność, średniowiecze, nowożytność, współczesność'},
+            {type:'choice',q:'Jak zapiszemy liczbę 9 cyframi rzymskimi?',opts:['IX','XI','IIX','IV'],a:'IX'},
+            {type:'choice',q:'Co oznacza cyfra rzymska XVII?',opts:['17','27','7','71'],a:'17'},
+            {type:'choice',q:'Chrzest Polski w 966 roku odbył się w…',opts:['X wieku','IX wieku','XI wieku','VIII wieku'],a:'X wieku'},
+            {type:'choice',q:'Do źródeł historycznych NIEMATERIALNYCH zaliczamy…',opts:['Obyczaje','Dokumenty','Budowle','Stroje'],a:'Obyczaje'},
+          ]
+        },
+        {
+          name:'Piastowie i początki Polski (Rozdz. II)', icon:'👑', questions:[
+            {type:'choice',q:'Któremu władcy Polska zawdzięcza przyjęcie chrztu?',opts:['Mieszkowi I','Bolesławowi Chrobremu','Kazimierzowi Wielkiemu','Władysławowi Łokietkowi'],a:'Mieszkowi I'},
+            {type:'choice',q:'Co oznacza powiedzenie „Kazimierz Wielki zastał Polskę drewnianą, a zostawił murowaną"?',opts:['Rozbudował kraj i wzniósł wiele zamków','Spalił stare domy','Zbudował drewniane kościoły','Sprowadził rzemieślników'],a:'Rozbudował kraj i wzniósł wiele zamków'},
+            {type:'text',q:'W którym roku Kazimierz Wielki założył pierwszą wyższą uczelnię w Polsce?',a:'1364'},
+            {type:'choice',q:'Jak w prawidłowej kolejności chronologicznej układają się te wydarzenia: chrzest Polski, unia w Krewie, bitwa pod Grunwaldem, zjazd gnieźnieński?',opts:['Chrzest, zjazd, unia, Grunwald','Zjazd, chrzest, Grunwald, unia','Unia, chrzest, zjazd, Grunwald','Grunwald, unia, zjazd, chrzest'],a:'Chrzest, zjazd, unia, Grunwald'},
+            {type:'choice',q:'Które z wymienionych postaci są LEGENDARNE (nie historyczne)?',opts:['Lech i Popiel','Zawisza Czarny i Święty Wojciech','Mieszko I i Bolesław','Jadwiga i Jagiełło'],a:'Lech i Popiel'},
+            {type:'choice',q:'Który opis dotyczy Mieszka I?',opts:['Pierwszy historyczny władca Polski, żona Dobrawa, dynastia Piastów','Pierwszy król Polski, zjazd gnieźnieński','Pochodził z Litwy, pojął Jadwigę za żonę','Urodzony w Toruniu, słynny astronom'],a:'Pierwszy historyczny władca Polski, żona Dobrawa, dynastia Piastów'},
+            {type:'choice',q:'Który opis dotyczy Władysława Jagiełły?',opts:['Pochodził z Litwy, przyjął chrzest, poślubił Jadwigę i został królem','Był pierwszym królem Polski','Uznawany za pierwszego historycznego władcę','Urodzony w Toruniu, astronom'],a:'Pochodził z Litwy, przyjął chrzest, poślubił Jadwigę i został królem'},
+            {type:'choice',q:'Oceń: „Bitwa pod Grunwaldem zakończyła się klęską wojsk zakonu krzyżackiego." To zdanie jest…',opts:['Prawdziwe','Fałszywe','Nie dotyczy','Częściowo prawdziwe'],a:'Prawdziwe'},
+            {type:'choice',q:'Oceń: „Pierwszą stolicą Polski był Kraków."',opts:['Fałszywe – pierwszą stolicą było Gniezno','Prawdziwe','Kraków i Gniezno były jednocześnie','Nie wiadomo'],a:'Fałszywe – pierwszą stolicą było Gniezno'},
+            {type:'choice',q:'Celem wyprawy biskupa Wojciecha do Prusów było…',opts:['Nawrócenie Prusów na chrześcijaństwo','Podbój ziem pruskich','Zawarcie pokoju','Budowa kościołów'],a:'Nawrócenie Prusów na chrześcijaństwo'},
+          ]
+        },
+        {
+          name:'Polska w XVII–XIX wieku (Rozdz. III)', icon:'⚔️', questions:[
+            {type:'choice',q:'Kto był dowódcą Legionów Polskich we Włoszech, uwiecznionym w słowach hymnu?',opts:['Jan Henryk Dąbrowski','Józef Wybicki','Stefan Czarniecki','Tadeusz Kościuszko'],a:'Jan Henryk Dąbrowski'},
+            {type:'choice',q:'Kto odkrył pierwiastki chemiczne rad i polon i jako pierwsza kobieta otrzymała dwie Nagrody Nobla?',opts:['Maria Skłodowska-Curie','Emilia Plater','Klementyna Hoffmanowa','Narcyza Żmichowska'],a:'Maria Skłodowska-Curie'},
+            {type:'choice',q:'Kto dowodził polskimi wojskami w czasie potopu szwedzkiego, zasłynął walką podjazdową?',opts:['Stefan Czarniecki','Jan III Sobieski','Tadeusz Kościuszko','Jan Henryk Dąbrowski'],a:'Stefan Czarniecki'},
+            {type:'choice',q:'Które z podanych wydarzeń rozegrały się w XVIII wieku?',opts:['Trzeci rozbiór Polski i powstanie kościuszkowskie','Potop szwedzki i odsiecz wiedeńska','Powstanie styczniowe i bitwa pod Racławicami','Legiony Polskie i rozbiory'],a:'Trzeci rozbiór Polski i powstanie kościuszkowskie'},
+            {type:'choice',q:'Które trzy państwa w XVIII wieku dokonały rozbiorów Polski?',opts:['Rosja, Prusy, Austria','Rosja, Francja, Niemcy','Austria, Szwecja, Turcja','Prusy, Anglia, Francja'],a:'Rosja, Prusy, Austria'},
+            {type:'choice',q:'Tadeusz Kościuszko brał udział w…',opts:['Bitwie pod Racławicami','Obronie klasztoru na Jasnej Górze','Oblężeniu Pskowa','Odsieczy wiedeńskiej'],a:'Bitwie pod Racławicami'},
+            {type:'choice',q:'Jan III Sobieski zasłynął…',opts:['Odsieczą wiedeńską w 1683 roku','Bitwą pod Racławicami','Obroną Jasnej Góry','Oblężeniem Pskowa'],a:'Odsieczą wiedeńską w 1683 roku'},
+            {type:'choice',q:'Husaria to…',opts:['Ciężkozbrojna jazda polska','Lekka piechota','Oddział artylerii','Formacja piechoty górskiej'],a:'Ciężkozbrojna jazda polska'},
+            {type:'choice',q:'Oceń: „Jedną z postaci historycznych uwiecznionych w tekście polskiego hymnu jest Jan III Sobieski."',opts:['Prawdziwe','Fałszywe','Nie dotyczy','Częściowo prawdziwe'],a:'Prawdziwe'},
+            {type:'choice',q:'Legiony Polskie we Włoszech (1797) utworzono, aby…',opts:['Walczyć o niepodległość Polski u boku Napoleona','Bronić Włoch przed Austrią','Wspierać rewolucję francuską','Walczyć z Turcją'],a:'Walczyć o niepodległość Polski u boku Napoleona'},
+          ]
+        },
+        {
+          name:'Polska w XX wieku (Rozdz. IV)', icon:'🪖', questions:[
+            {type:'choice',q:'Budowa portu w Gdyni po 1918 roku miała dla odrodzonej Polski znaczenie, bo…',opts:['Dawała dostęp do morza i możliwość handlu','Była stolicą nowego państwa','Służyła tylko do rybołówstwa','Była fortecą wojskową'],a:'Dawała dostęp do morza i możliwość handlu'},
+            {type:'choice',q:'Który opis dotyczy Józefa Piłsudskiego?',opts:['Dowódca Legionów Polskich, Naczelnik Państwa po odzyskaniu niepodległości','Prymas Tysiąclecia, stał na czele Kościoła','Żołnierz niezłomny, dobrowolnie uwięziony w Auschwitz','Przewodniczący Solidarności, laureat Nobla'],a:'Dowódca Legionów Polskich, Naczelnik Państwa po odzyskaniu niepodległości'},
+            {type:'choice',q:'Który opis dotyczy Lecha Wałęsy?',opts:['Stanął na czele związku zawodowego Solidarność, uhonorowany Pokojową Nagrodą Nobla','Prymas Tysiąclecia','Naczelnik Państwa w 1918 roku','Żołnierz niezłomny z Auschwitz'],a:'Stanął na czele związku zawodowego Solidarność, uhonorowany Pokojową Nagrodą Nobla'},
+            {type:'choice',q:'Akcja pod Arsenałem była przeprowadzona przez…',opts:['Szare Szeregi (harcerzy)','Armię Krajową','Legiony Polskie','Żołnierzy wyklętych'],a:'Szare Szeregi (harcerzy)'},
+            {type:'choice',q:'„Żołnierze wyklęci" to określenie żołnierzy, którzy…',opts:['Po II wojnie walczyli z władzą komunistyczną','Walczyli w czasie I wojny światowej','Dezerterowali z wojska','Byli jeńcami wojennymi'],a:'Po II wojnie walczyli z władzą komunistyczną'},
+            {type:'choice',q:'Jan Paweł II nazywany jest papieżem pielgrzymem, ponieważ…',opts:['Odwiedzał kraje świata i pielgrzymował do wiernych','Chodził pieszo do Jerozolimy','Był pierwszym papieżem Polakiem','Zreformował Kościół katolicki'],a:'Odwiedzał kraje świata i pielgrzymował do wiernych'},
+            {type:'choice',q:'Oceń: „II wojna światowa rozpoczęła się w 1939 roku."',opts:['Prawdziwe','Fałszywe','Zaczęła się w 1938','Zaczęła się w 1940'],a:'Prawdziwe'},
+            {type:'choice',q:'Oceń: „Powstanie Wielkopolskie zakończyło się sukcesem Polaków."',opts:['Prawdziwe','Fałszywe','Zakończyło się klęską','Nie zostało zakończone'],a:'Prawdziwe'},
+            {type:'choice',q:'Czym były Obrady Okrągłego Stołu?',opts:['Rozmowami między komunistami a opozycją o przemianach ustrojowych','Konferencją pokojową po II wojnie','Zjazdem partii komunistycznej','Spotkaniem przywódców NATO'],a:'Rozmowami między komunistami a opozycją o przemianach ustrojowych'},
+            {type:'choice',q:'Szare Szeregi to…',opts:['Harcerze prowadzący działalność konspiracyjną podczas II wojny','Oddział Armii Krajowej','Formacja kawalerii z II wojny','Żołnierze walczący po 1945 roku'],a:'Harcerze prowadzący działalność konspiracyjną podczas II wojny'},
+          ]
+        }
+      ]
+    }
+  }
+};
+
+// Copy class 4 data to classes 5 and 6 with some modifications
+DB[5] = JSON.parse(JSON.stringify(DB[4]));
+DB[6] = JSON.parse(JSON.stringify(DB[4]));
+
+// Override some chapters for class 5
+DB[5].math.chapters = [
+  {
+    name:'Ułamki dziesiętne', icon:'🔣', questions:[
+      {type:'choice',q:'Jak zapisujemy "jedna dziesiąta" jako ułamek dziesiętny?',opts:['0,1','0,01','1,0','10'],a:'0,1'},
+      {type:'text',q:'Ile to 0,5 + 0,5?',a:'1'},
+      {type:'choice',q:'Ile to 2,5 × 2?',opts:['5','4','4,5','5,5'],a:'5'},
+      {type:'text',q:'Ile to 3,75 – 1,25?',a:'2,5'},
+      {type:'choice',q:'Który z ułamków jest największy?',opts:['0,9','0,5','0,75','0,8'],a:'0,9'},
+      {type:'choice',q:'Ile to 1,2 + 2,8?',opts:['4','3,10','4,0','5'],a:'4'},
+      {type:'text',q:'Ile to 0,1 × 10?',a:'1'},
+    ]
+  },
+  {
+    name:'Procenty', icon:'💯', questions:[
+      {type:'choice',q:'Ile to 50% z 100?',opts:['50','25','75','100'],a:'50'},
+      {type:'text',q:'Ile to 10% z 200?',a:'20'},
+      {type:'choice',q:'25% to ile w ułamku?',opts:['1/4','1/2','3/4','1/5'],a:'1/4'},
+      {type:'choice',q:'Ile to 100% z dowolnej liczby?',opts:['Cała liczba','Połowa','Podwójenie','Brak'],a:'Cała liczba'},
+      {type:'text',q:'Cena 200 zł, obniżka 10%. Nowa cena?',a:'180'},
+      {type:'choice',q:'Ile to 1% z 500?',opts:['5','50','0,5','0,05'],a:'5'},
+      {type:'choice',q:'75% uczniów zdało test. W klasie 28 os. Ile zdało?',opts:['21','18','24','25'],a:'21'},
+    ]
+  },
+  {
+    name:'Pola i obwody', icon:'📐', questions:[
+      {type:'choice',q:'Pole trójkąta = ?',opts:['(a × h) ÷ 2','a × b','2 × (a+b)','a²'],a:'(a × h) ÷ 2'},
+      {type:'text',q:'Pole kwadratu o boku 7 cm = ? cm²',a:'49'},
+      {type:'choice',q:'Ile wynosi obwód trójkąta równobocznego o boku 5 cm?',opts:['15 cm','10 cm','25 cm','20 cm'],a:'15 cm'},
+      {type:'text',q:'Pole prostokąta o wymiarach 8 × 5 = ?',a:'40'},
+      {type:'choice',q:'Obwód koła = ?',opts:['2πr','πr²','4r','2r'],a:'2πr'},
+      {type:'text',q:'Trójkąt: podstawa 10 cm, wysokość 6 cm. Pole = ? cm²',a:'30'},
+      {type:'choice',q:'Jeśli bok kwadratu = 4 cm, pole = ?',opts:['16 cm²','8 cm²','12 cm²','4 cm²'],a:'16 cm²'},
+    ]
+  },
+  {
+    name:'Liczby ujemne', icon:'➖', questions:[
+      {type:'choice',q:'Ile to (-3) + 5?',opts:['2','-2','8','-8'],a:'2'},
+      {type:'text',q:'Ile to 0 – 7?',a:'-7'},
+      {type:'choice',q:'Która liczba jest mniejsza?',opts:['-10','10','-1','0'],a:'-10'},
+      {type:'choice',q:'Ile to (-4) × (-3)?',opts:['12','-12','7','-7'],a:'12'},
+      {type:'text',q:'Temperatura rano: -5°C, w południe wzrosła o 8°C. Ile wynosi?',a:'3'},
+      {type:'choice',q:'Ile to (-20) ÷ 4?',opts:['-5','5','-4','4'],a:'-5'},
+      {type:'choice',q:'Oś liczbowa: gdzie jest –3 w stosunku do 0?',opts:['Po lewej','Po prawej','Na środku','Nie wiadomo'],a:'Po lewej'},
+    ]
+  }
+];
+
+DB[5].polish.chapters[0] = {
+  name:'Odmiana przez przypadki', icon:'🔤', questions:[
+    {type:'choice',q:'Ile jest przypadków w języku polskim?',opts:['7','5','6','8'],a:'7'},
+    {type:'choice',q:'Kto? Co? – to pytania którego przypadka?',opts:['Mianownik','Dopełniacz','Celownik','Biernik'],a:'Mianownik'},
+    {type:'text',q:'Podaj przypadek pytania "Kogo? Czego?"',a:'Dopełniacz'},
+    {type:'choice',q:'"Komu? Czemu?" to pytania…',opts:['Celownika','Dopełniacza','Mianownika','Narzędnika'],a:'Celownika'},
+    {type:'choice',q:'Przypadek "Z kim? Z czym?" to…',opts:['Narzędnik','Miejscownik','Wołacz','Biernik'],a:'Narzędnik'},
+    {type:'text',q:'Podaj przypadek odpowiadający na pytanie "O kim? O czym?"',a:'Miejscownik'},
+    {type:'choice',q:'Wołacz używamy gdy…',opts:['Zwracamy się do kogoś','Opisujemy czynność','Pytamy o miejsce','Opisujemy przedmiot'],a:'Zwracamy się do kogoś'},
+  ]
+};
+
+DB[5].english.chapters[3] = {
+  name:'Czas przeszły (Past Simple)', icon:'⏮️', questions:[
+    {type:'choice',q:'Jak tworzymy Past Simple czasownika regularnego?',opts:['Dodajemy -ed','-ing','do + verb','will + verb'],a:'Dodajemy -ed'},
+    {type:'text',q:'Podaj formę Past Simple "go": I ___ to school yesterday.',a:'went'},
+    {type:'choice',q:'"She played football" – kiedy?',opts:['W przeszłości','Teraz','W przyszłości','Zawsze'],a:'W przeszłości'},
+    {type:'choice',q:'Przeczenie Past Simple: "I did not ___"',opts:['go','went','gone','going'],a:'go'},
+    {type:'text',q:'Past Simple od "eat"',a:'ate'},
+    {type:'choice',q:'Pytanie Past Simple: "___ you see the film?"',opts:['Did','Do','Was','Were'],a:'Did'},
+    {type:'choice',q:'Past Simple od "have" to…',opts:['had','haved','has','having'],a:'had'},
+  ]
+};
+
+DB[5].history.chapters[0] = {
+  name:'Polska w XVI–XVII w.', icon:'👑', questions:[
+    {type:'choice',q:'Jak nazywało się połączenie Polski i Litwy z 1569 roku?',opts:['Unia Lubelska','Unia Krewska','Unia Brzeska','Unia Horodelska'],a:'Unia Lubelska'},
+    {type:'text',q:'Jak nazywało się państwo polsko-litewskie po unii lubelskiej?',a:'Rzeczpospolita'},
+    {type:'choice',q:'Kto był twórcą języka literackiego polskiego renesansu?',opts:['Jan Kochanowski','Adam Mickiewicz','Mikołaj Rej','Szymon Szymonowic'],a:'Jan Kochanowski'},
+    {type:'choice',q:'Mikołaj Kopernik odkrył, że…',opts:['Ziemia krąży wokół Słońca','Słońce krąży wokół Ziemi','Księżyc jest planetą','Gwiazdy to słońca'],a:'Ziemia krąży wokół Słońca'},
+    {type:'text',q:'W którym roku uchwalono Konstytucję 3 Maja?',a:'1791'},
+    {type:'choice',q:'Kto był ostatnim królem Polski?',opts:['Stanisław August Poniatowski','Jan III Sobieski','Stefan Batory','Zygmunt III Waza'],a:'Stanisław August Poniatowski'},
+    {type:'choice',q:'Gdzie Jan III Sobieski odniósł słynne zwycięstwo w 1683 roku?',opts:['Wiedeń','Wiedeń','Grunwald','Legnica'],a:'Wiedeń'},
+  ]
+};
+
+// Class 6 overrides
+DB[6].math.chapters = [
+  {
+    name:'Algebra – wyrażenia', icon:'🔡', questions:[
+      {type:'choice',q:'Co to jest zmienna w matematyce?',opts:['Symbol zastępujący liczbę','Wynik działania','Rodzaj figury','Stała wartość'],a:'Symbol zastępujący liczbę'},
+      {type:'text',q:'Oblicz: 3x – 2 dla x = 4',a:'10'},
+      {type:'choice',q:'Uprość: 2a + 3a = ?',opts:['5a','6a','5','2a²'],a:'5a'},
+      {type:'text',q:'Rozwiąż: x + 5 = 12 → x = ?',a:'7'},
+      {type:'choice',q:'Rozwiąż: 2x = 16 → x = ?',opts:['8','4','6','12'],a:'8'},
+      {type:'text',q:'Oblicz: (x + 2) dla x = 3 → wynik',a:'5'},
+      {type:'choice',q:'Które równanie ma rozwiązanie x = 3?',opts:['2x = 6','x + 3 = 5','3x = 6','x – 4 = 0'],a:'2x = 6'},
+    ]
+  },
+  {
+    name:'Geometria przestrzenna', icon:'📦', questions:[
+      {type:'choice',q:'Ile ścian ma sześcian?',opts:['6','8','4','12'],a:'6'},
+      {type:'text',q:'Objętość sześcianu o boku 3 cm = ? cm³',a:'27'},
+      {type:'choice',q:'Ile wierzchołków ma ostrosłup czworokątny?',opts:['5','4','6','8'],a:'5'},
+      {type:'choice',q:'Pole powierzchni bocznej walca = ?',opts:['2πrh','πr²h','2πr²','4πr²'],a:'2πrh'},
+      {type:'text',q:'Sześcian o boku 2 cm: objętość = ? cm³',a:'8'},
+      {type:'choice',q:'Graniastosłup prostokątny ma ile krawędzi?',opts:['12','8','6','10'],a:'12'},
+      {type:'choice',q:'Objętość prostopadłościanu = ?',opts:['a × b × c','2(ab+bc+ca)','a + b + c','abc²'],a:'a × b × c'},
+    ]
+  },
+  {
+    name:'Proporcje i skale', icon:'⚖️', questions:[
+      {type:'choice',q:'Skala mapy 1:100 000 oznacza, że 1 cm na mapie = ?',opts:['1 km','10 km','100 m','10 m'],a:'1 km'},
+      {type:'text',q:'Proporcja: 2/3 = ?/9 → brakująca liczba',a:'6'},
+      {type:'choice',q:'Jeśli 3 jabłka kosztują 6 zł, to 7 jabłek kosztuje…',opts:['14 zł','12 zł','10 zł','21 zł'],a:'14 zł'},
+      {type:'choice',q:'Proporcja to…',opts:['Równość dwóch stosunków','Suma dwóch liczb','Różnica ułamków','Iloczyn zmiennych'],a:'Równość dwóch stosunków'},
+      {type:'text',q:'Na mapie 1:50000 odcinek 4 cm odpowiada ? km w rzeczywistości',a:'2'},
+      {type:'choice',q:'Model samochodu w skali 1:24 ma długość 15 cm. Prawdziwy samochód ma…',opts:['360 cm','24 cm','240 cm','150 cm'],a:'360 cm'},
+      {type:'choice',q:'Wyraź w skali 1:1000: 3 m = ?',opts:['0,3 cm','3 mm','30 cm','3 cm'],a:'0,3 cm'},
+    ]
+  },
+  {
+    name:'Statystyka i wykresy', icon:'📊', questions:[
+      {type:'choice',q:'Co to jest średnia arytmetyczna?',opts:['Suma podzielona przez liczbę elementów','Środkowy wynik','Najczęstszy wynik','Różnica wyników'],a:'Suma podzielona przez liczbę elementów'},
+      {type:'text',q:'Średnia: 4, 6, 8, 10, 12. Ile wynosi?',a:'8'},
+      {type:'choice',q:'Jak nazywamy wynik pojawiający się najczęściej?',opts:['Modalna (dominanta)','Mediana','Średnia','Zakres'],a:'Modalna (dominanta)'},
+      {type:'choice',q:'Diagram kołowy pokazuje…',opts:['Procentowy udział danych','Zmianę w czasie','Porównanie różnych grup','Zależność liniową'],a:'Procentowy udział danych'},
+      {type:'text',q:'Wyniki testu: 5, 3, 4, 5, 3. Mediana (środkowa wartość po posortowaniu) = ?',a:'4'},
+      {type:'choice',q:'Wykres słupkowy najlepiej pokazuje…',opts:['Porównanie kategorii','Zmianę w czasie','Proporcje całości','Zależności'],a:'Porównanie kategorii'},
+      {type:'choice',q:'Zakres danych to…',opts:['Max – Min','Suma wszystkich','Środkowa wartość','Najczęstsza wartość'],a:'Max – Min'},
+    ]
+  }
+];
+
+DB[6].english.chapters[3] = {
+  name:'Czas przyszły (Future)', icon:'⏩', questions:[
+    {type:'choice',q:'Jak tworzymy Future Simple?',opts:['will + bezokolicznik','going + verb','-ed','does + verb'],a:'will + bezokolicznik'},
+    {type:'text',q:'Przetłumacz: "Będę jadł pizzę" = I ___ eat pizza.',a:'will'},
+    {type:'choice',q:'"I will not go" = ?',opts:["I won't go",'I not go','I going not','I not will go'],a:"I won't go"},
+    {type:'choice',q:'Kiedy używamy "going to"?',opts:['Planowane zamierzenia','Spontaniczne decyzje','Przeszłość','Przyzwyczajenia'],a:'Planowane zamierzenia'},
+    {type:'text',q:'Uzupełnij: "She ___ be here tomorrow." (will)',a:'will'},
+    {type:'choice',q:'Pytanie Future: "___ you come to the party?"',opts:['Will','Do','Did','Are'],a:'Will'},
+    {type:'choice',q:'Jak powiemy: "Zamierzam uczyć się jutro"?',opts:["I'm going to study tomorrow",'I study tomorrow','I will studied','I go study'],a:"I'm going to study tomorrow"},
+  ]
+};
+
+DB[6].history.chapters[0] = {
+  name:'Polska pod zaborami', icon:'⛓️', questions:[
+    {type:'choice',q:'W ilu rozbiorach brała udział Polska?',opts:['3','2','4','1'],a:'3'},
+    {type:'text',q:'W którym roku nastąpił pierwszy rozbiór Polski?',a:'1772'},
+    {type:'choice',q:'Które państwa dokonały rozbiorów Polski?',opts:['Rosja, Prusy, Austria','Rosja, Niemcy, Francja','Austria, Szwecja, Turcja','Prusy, Francja, Anglia'],a:'Rosja, Prusy, Austria'},
+    {type:'choice',q:'Kiedy uchwalono Konstytucję 3 Maja?',opts:['1791','1772','1795','1815'],a:'1791'},
+    {type:'text',q:'Kto był dowódcą Insurekcji Kościuszkowskiej?',a:'Kościuszko'},
+    {type:'choice',q:'W którym roku Polska odzyskała niepodległość?',opts:['1918','1920','1945','1939'],a:'1918'},
+    {type:'choice',q:'Co oznacza "zabór"?',opts:['Zagarnięcie terytorium','Rodzaj podatku','Rodzaj umowy','Typ granic'],a:'Zagarnięcie terytorium'},
+  ]
+};
+
+DB[6].history.chapters[1] = {
+  name:'I i II Wojna Światowa', icon:'🪖', questions:[
+    {type:'choice',q:'Kiedy rozpoczęła się I Wojna Światowa?',opts:['1914','1918','1939','1945'],a:'1914'},
+    {type:'text',q:'W którym roku II Wojna Światowa zakończyła się w Europie?',a:'1945'},
+    {type:'choice',q:'Kiedy Niemcy napadły na Polskę?',opts:['1 września 1939','1 września 1914','17 września 1939','3 września 1939'],a:'1 września 1939'},
+    {type:'choice',q:'Jak nazywała się polska formacja wojskowa we Francji i Anglii?',opts:['Polskie Siły Zbrojne','Armia Krajowa','Wojsko Polskie','Bataliony Chłopskie'],a:'Polskie Siły Zbrojne'},
+    {type:'text',q:'Jak nazywało się Powstanie w Getcie Warszawskim? (rok 1943)',a:'Powstanie w getcie warszawskim'},
+    {type:'choice',q:'Kiedy wybuchło Powstanie Warszawskie?',opts:['1 sierpnia 1944','1 września 1939','17 września 1939','6 czerwca 1944'],a:'1 sierpnia 1944'},
+    {type:'choice',q:'Który kraj zaatakował Polskę 17 września 1939?',opts:['ZSRR','Niemcy','Austria','Czechy'],a:'ZSRR'},
+  ]
+};
+
+// ============================================================
+//  BADGE DEFINITIONS
+// ============================================================
+const BADGES = {
+  first_test:  { icon:'🎯', name:'Pierwszy test!',  desc:'Ukończyłeś pierwszy test' },
+  perfect:     { icon:'💎', name:'Perfekcja!',       desc:'100% w teście' },
+  math_master: { icon:'🔢', name:'Mistrz Matmy',     desc:'Ukończono wszystkie rozdziały matematyki' },
+  polish_pro:  { icon:'📖', name:'Polonista',         desc:'Ukończono Polski' },
+  eng_hero:    { icon:'🌍', name:'Anglik',            desc:'Ukończono Angielski' },
+  nature_fan:  { icon:'🌿', name:'Przyrodnik',        desc:'Ukończono Przyrodę' },
+  hist_buff:   { icon:'🏰', name:'Historyk',          desc:'Ukończono Historię' },
+  speed_run:   { icon:'⚡', name:'Błyskawica',        desc:'Ukończono test w <30 sekund' },
+  streak_3:    { icon:'🔥', name:'Seria x3',          desc:'3 poprawne z rzędu' },
+  comeback:    { icon:'💪', name:'Powrót!',           desc:'Powtórzyłeś test i poprawiłeś wynik' },
+};
+
+// ============================================================
+//  STATE
+// ============================================================
+let state = {
+  cls: null, subj: null, chapter: null,
+  questions: [], current: 0, score: 0,
+  correctStreak: 0, startTime: 0,
+  answered: false, timer: null, timerVal: 30,
+  prevScore: null,
+};
+
+function loadSavedData() {
+  const s = JSON.parse(localStorage.getItem('edusmart_stats') || '{"tests":0,"totalScore":0,"badges":[]}');
+  document.getElementById('stat-tests').textContent  = s.tests;
+  document.getElementById('stat-score').textContent  = s.totalScore;
+  document.getElementById('stat-badges').textContent = s.badges.length;
+  return s;
+}
+function saveStats(pts, earned) {
+  const s = loadSavedData();
+  s.tests++;
+  s.totalScore += pts;
+  earned.forEach(b => { if (!s.badges.includes(b)) s.badges.push(b); });
+  localStorage.setItem('edusmart_stats', JSON.stringify(s));
+  document.getElementById('stat-tests').textContent  = s.tests;
+  document.getElementById('stat-score').textContent  = s.totalScore;
+  document.getElementById('stat-badges').textContent = s.badges.length;
+  return s;
+}
+function getExistingBadges() {
+  const s = JSON.parse(localStorage.getItem('edusmart_stats') || '{"badges":[]}');
+  return s.badges || [];
+}
+
+// ============================================================
+//  SOUND ENGINE
+// ============================================================
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  try {
+    const g = AC.createGain(); g.connect(AC.destination); g.gain.value = 0.25;
+    const o = AC.createOscillator(); o.connect(g);
+    if (type==='click'){
+      o.frequency.value=600; o.type='sine'; g.gain.setTargetAtTime(0,AC.currentTime+.05,0.01);
+      o.start(); o.stop(AC.currentTime+.08);
+    } else if (type==='correct'){
+      o.type='sine';
+      o.frequency.setValueAtTime(500,AC.currentTime);
+      o.frequency.setValueAtTime(700,AC.currentTime+.1);
+      o.frequency.setValueAtTime(900,AC.currentTime+.2);
+      g.gain.setTargetAtTime(0,AC.currentTime+.3,0.05);
+      o.start(); o.stop(AC.currentTime+.5);
+    } else if (type==='wrong'){
+      o.type='sawtooth'; o.frequency.value=200;
+      o.frequency.setValueAtTime(200,AC.currentTime);
+      o.frequency.setValueAtTime(150,AC.currentTime+.15);
+      g.gain.setTargetAtTime(0,AC.currentTime+.2,0.03);
+      o.start(); o.stop(AC.currentTime+.35);
+    } else if (type==='fanfare'){
+      const notes=[523,659,784,1047];
+      notes.forEach((f,i)=>{
+        const o2=AC.createOscillator(), g2=AC.createGain();
+        o2.connect(g2); g2.connect(AC.destination);
+        o2.type='triangle'; o2.frequency.value=f;
+        g2.gain.setValueAtTime(.2,AC.currentTime+i*.12);
+        g2.gain.setTargetAtTime(0,AC.currentTime+i*.12+.1,.03);
+        o2.start(AC.currentTime+i*.12); o2.stop(AC.currentTime+i*.12+.25);
+      });
+    }
+  } catch(e){}
+}
+
+// ============================================================
+//  TTS
+// ============================================================
+let utterance = null;
+function speakQuestion() {
+  if (!window.speechSynthesis) return;
+  const btn = document.getElementById('tts-btn');
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); btn.classList.remove('speaking'); return; }
+  const txt = document.getElementById('question-text').textContent;
+  utterance = new SpeechSynthesisUtterance(txt);
+  utterance.lang = 'pl-PL';
+  utterance.rate = 0.9;
+  btn.classList.add('speaking');
+  utterance.onend = () => btn.classList.remove('speaking');
+  utterance.onerror = () => btn.classList.remove('speaking');
+  speechSynthesis.speak(utterance);
+}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function showScreen(id) {
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).scrollTop = 0;
+  window.scrollTo(0,0);
+}
+function goBack(target) {
+  playSound('click');
+  if (state.timer) { clearInterval(state.timer); state.timer=null; }
+  showScreen(target);
+}
+
+// ============================================================
+//  SELECT CLASS
+// ============================================================
+function selectClass(cls) {
+  playSound('click');
+  state.cls = cls;
+  document.getElementById('subj-title').textContent = `Klasa ${cls} – Wybierz przedmiot`;
+  // Show class color on subjects screen
+  const colors = {4:'var(--c4)',5:'var(--c5)',6:'var(--c6)'};
+  document.getElementById('screen-subjects').style.setProperty('--accent',colors[cls]);
+  showScreen('screen-subjects');
+}
+
+// ============================================================
+//  SELECT SUBJECT
+// ============================================================
+const SUBJ_MAP = {math:'math',polish:'polish',english:'english',nature:'nature',history:'history'};
+function selectSubject(subj) {
+  playSound('click');
+  state.subj = subj;
+  const data = DB[state.cls][subj];
+  document.getElementById('chap-title').textContent = `${data.icon} ${data.name}`;
+  document.getElementById('chap-subtitle').textContent = `Klasa ${state.cls} – Wybierz rozdział`;
+  document.getElementById('screen-chapters').style.setProperty('--cc', data.color);
+  renderChapters(data);
+  showScreen('screen-chapters');
+}
+
+function renderChapters(data) {
+  const list = document.getElementById('chapters-list');
+  const done = JSON.parse(localStorage.getItem('edusmart_done')||'{}');
+  list.innerHTML = data.chapters.map((ch,i) => {
+    const key = `${state.cls}_${state.subj}_${i}`;
+    const isDone = done[key];
+    const bestScore = isDone ? `<span style="color:var(--cc);font-weight:800">${isDone}/${ch.questions.length}</span>` : '<span style="color:var(--muted)">Nie zrobiony</span>';
+    return `<div class="chapter-card" onclick="selectChapter(${i})" style="--cc:${data.color}">
+      <div class="chapter-num">${i+1}</div>
+      <div class="chapter-info">
+        <div class="chapter-name">${ch.icon} ${ch.name}</div>
+        <div class="chapter-meta">${ch.questions.length} pytań · Wynik: ${bestScore}</div>
+      </div>
+      ${isDone ? '<div class="chapter-done">✅</div>' : ''}
+      <div class="chapter-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  SELECT CHAPTER → START QUIZ
+// ============================================================
+function selectChapter(idx) {
+  playSound('click');
+  state.chapter = idx;
+  const ch = DB[state.cls][state.subj].chapters[idx];
+  state.questions = shuffle([...ch.questions]);
+  state.current = 0;
+  state.score = 0;
+  state.correctStreak = 0;
+  state.startTime = Date.now();
+  state.answered = false;
+
+  // Set quiz color
+  const color = DB[state.cls][state.subj].color;
+  document.getElementById('screen-quiz').style.setProperty('--qc', color);
+  document.getElementById('screen-results').style.setProperty('--qc', color);
+
+  const subj = DB[state.cls][state.subj];
+  document.getElementById('quiz-badge').textContent = `${subj.icon} ${subj.name}`;
+  document.getElementById('live-score').textContent = '0';
+
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+// ============================================================
+//  QUIZ LOGIC
+// ============================================================
+function renderQuestion() {
+  if (state.timer) { clearInterval(state.timer); state.timer=null; }
+  const q = state.questions[state.current];
+  const total = state.questions.length;
+  state.answered = false;
+
+  document.getElementById('next-btn').classList.remove('visible');
+  document.getElementById('feedback-msg').style.display = 'none';
+  document.getElementById('progress-fill').style.width = `${(state.current/total)*100}%`;
+  document.getElementById('progress-text').textContent = `Pytanie ${state.current+1} z ${total}`;
+  document.getElementById('question-text').textContent = q.q;
+
+  if (q.type === 'choice') {
+    const opts = shuffle([...q.opts]);
+    const letters = ['A','B','C','D'];
+    document.getElementById('options-container').innerHTML =
+      `<div class="options-grid">${opts.map((o,i)=>
+        `<button class="option-btn" onclick="answerChoice(this,'${escape(o)}','${escape(q.a)}')">
+          <span class="option-letter">${letters[i]}</span> ${o}
+        </button>`).join('')}</div>`;
+  } else {
+    document.getElementById('options-container').innerHTML =
+      `<div class="text-answer-wrap">
+        <input type="text" class="text-answer" id="text-ans" placeholder="Wpisz odpowiedź…"
+          onkeydown="if(event.key==='Enter')submitText()">
+        <button class="submit-btn" onclick="submitText()">✔ Sprawdź odpowiedź</button>
+      </div>`;
+    setTimeout(()=>{ const el=document.getElementById('text-ans'); if(el) el.focus(); }, 100);
+  }
+
+  // Optional timer (can be toggled)
+  // startTimer();
+}
+
+function startTimer() {
+  state.timerVal = 30;
+  document.getElementById('timer-wrap').style.display = 'flex';
+  document.getElementById('timer-text').textContent = '30';
+  document.getElementById('timer-text').className = 'timer-text';
+  state.timer = setInterval(()=>{
+    state.timerVal--;
+    document.getElementById('timer-text').textContent = state.timerVal;
+    if (state.timerVal <= 10) document.getElementById('timer-text').classList.add('urgent');
+    if (state.timerVal <= 0) {
+      clearInterval(state.timer);
+      if (!state.answered) {
+        playSound('wrong');
+        showFeedback(false,'⏱️ Czas minął!');
+        document.querySelectorAll('.option-btn,.submit-btn,.text-answer').forEach(b=>b.disabled=true);
+        state.answered=true;
+        document.getElementById('next-btn').classList.add('visible');
+      }
+    }
+  },1000);
+}
+
+function answerChoice(btn, picked, correct) {
+  if (state.answered) return;
+  state.answered = true;
+  if (state.timer) clearInterval(state.timer);
+  const isCorrect = unescape(picked) === unescape(correct);
+  document.querySelectorAll('.option-btn').forEach(b => {
+    b.disabled = true;
+    if (unescape(b.textContent.trim().slice(1).trim()) === unescape(correct) ||
+        b.textContent.includes(unescape(correct))) {
+      // find correct
+    }
+  });
+  // Highlight
+  document.querySelectorAll('.option-btn').forEach(b => {
+    const bText = b.textContent.trim().slice(1).trim();
+    if (bText === unescape(correct)) b.classList.add('correct');
+    else if (b === btn && !isCorrect) b.classList.add('wrong');
+  });
+  handleAnswer(isCorrect);
+}
+
+function submitText() {
+  if (state.answered) return;
+  const input = document.getElementById('text-ans');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  state.answered = true;
+  if (state.timer) clearInterval(state.timer);
+  const q = state.questions[state.current];
+  const isCorrect = val.toLowerCase() === q.a.toLowerCase();
+  input.disabled = true;
+  document.querySelector('.submit-btn').disabled = true;
+  input.classList.add(isCorrect ? 'correct' : 'wrong');
+  handleAnswer(isCorrect, q.a);
+}
+
+function handleAnswer(isCorrect, correctAns) {
+  if (isCorrect) {
+    state.score++;
+    state.correctStreak++;
+    document.getElementById('live-score').textContent = state.score;
+    playSound('correct');
+    const msgs = ['🎉 Świetnie!','⭐ Doskonale!','🏆 Brawo!','💪 Super!','✨ Znakomicie!'];
+    showFeedback(true, msgs[Math.floor(Math.random()*msgs.length)]);
+    if (state.correctStreak % 3 === 0) showAchievement('🔥 Seria '+state.correctStreak+'!');
+  } else {
+    state.correctStreak = 0;
+    playSound('wrong');
+    const hint = correctAns ? `Prawidłowa odpowiedź: "${correctAns}"` : '';
+    showFeedback(false, `❌ Błąd! ${hint}`);
+  }
+  document.getElementById('next-btn').classList.add('visible');
+}
+
+function showFeedback(ok, msg) {
+  const el = document.getElementById('feedback-msg');
+  el.textContent = msg;
+  el.className = 'feedback-msg ' + (ok ? 'correct' : 'wrong');
+  el.style.display = 'block';
+}
+
+function nextQuestion() {
+  playSound('click');
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+  state.current++;
+  if (state.current >= state.questions.length) {
+    finishQuiz();
+  } else {
+    renderQuestion();
+  }
+}
+
+// ============================================================
+//  FINISH QUIZ
+// ============================================================
+function finishQuiz() {
+  const total = state.questions.length;
+  const pct = Math.round((state.score/total)*100);
+  const elapsed = Math.round((Date.now()-state.startTime)/1000);
+
+  // Save best score
+  const done = JSON.parse(localStorage.getItem('edusmart_done')||'{}');
+  const key = `${state.cls}_${state.subj}_${state.chapter}`;
+  const prev = done[key] || 0;
+  const isImproved = state.score > prev;
+  done[key] = Math.max(state.score, prev);
+  localStorage.setItem('edusmart_done', JSON.stringify(done));
+
+  // Determine earned badges
+  const existing = getExistingBadges();
+  const newBadges = [];
+  if (!existing.includes('first_test')) newBadges.push('first_test');
+  if (pct===100 && !existing.includes('perfect')) newBadges.push('perfect');
+  if (elapsed<30 && !existing.includes('speed_run')) newBadges.push('speed_run');
+  if (isImproved && prev>0 && !existing.includes('comeback')) newBadges.push('comeback');
+  const subjBadges = {math:'math_master',polish:'polish_pro',english:'eng_hero',nature:'nature_fan',history:'hist_buff'};
+  const allDone = DB[state.cls][state.subj].chapters.every((_,i)=>done[`${state.cls}_${state.subj}_${i}`]);
+  if (allDone) { const b=subjBadges[state.subj]; if(b&&!existing.includes(b)) newBadges.push(b); }
+
+  saveStats(state.score, newBadges);
+  if (newBadges.length) { playSound('fanfare'); newBadges.forEach((b,i)=>setTimeout(()=>showAchievement(BADGES[b].icon+' '+BADGES[b].name),i*1200)); }
+
+  // Render results
+  const emoji = pct>=90?'🏆':pct>=70?'😊':'💪';
+  const title  = pct>=90?'Świetnie!':pct>=70?'Dobrze!':'Spróbuj jeszcze raz!';
+  const titleClass= pct>=90?'great':pct>=70?'good':'try';
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-title').className = 'result-title '+titleClass;
+  document.getElementById('result-subtitle').textContent = DB[state.cls][state.subj].chapters[state.chapter].name;
+  document.getElementById('res-pts').textContent = state.score;
+  document.getElementById('res-total').textContent = total;
+  document.getElementById('res-percent').textContent = pct+'%';
+  document.getElementById('res-correct').textContent = state.score;
+  document.getElementById('res-wrong').textContent = total-state.score;
+  document.getElementById('res-time').textContent = elapsed+'s';
+
+  // Badges display
+  const allBadges = [...existing, ...newBadges];
+  const badgesRow = document.getElementById('badges-row');
+  if (allBadges.length) {
+    badgesRow.innerHTML = allBadges.map(b => {
+      const bd = BADGES[b]; if(!bd) return '';
+      const isNew = newBadges.includes(b);
+      return `<div class="badge-item ${isNew?'new':''}">
+        ${bd.icon} ${bd.name} ${isNew?'<span style="color:var(--english);font-size:.7rem">NOWA!</span>':''}
+      </div>`;
+    }).join('');
+    document.getElementById('badges-section').style.display='block';
+  } else {
+    document.getElementById('badges-section').style.display='none';
+  }
+
+  if (pct>=90) confetti();
+  showScreen('screen-results');
+}
+
+function retryQuiz() {
+  playSound('click');
+  selectChapter(state.chapter);
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function escape(str) { return encodeURIComponent(str); }
+function unescape(str) { try { return decodeURIComponent(str); } catch(e){ return str; } }
+
+function showAchievement(msg) {
+  const el = document.getElementById('achievement-toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2800);
+}
+
+function confetti() {
+  const colors = ['#ff6b6b','#ffd32a','#0be881','#48dbfb','#c56cf0','#ff9f43'];
+  for (let i=0;i<60;i++) {
+    const el = document.createElement('div');
+    el.className='confetti';
+    el.style.cssText=`
+      left:${Math.random()*100}vw;
+      top:${-Math.random()*50}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${2+Math.random()*3}s;
+      animation-delay:${Math.random()*1.5}s;
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// ============================================================
+//  STARS BACKGROUND
+// ============================================================
+function createStars() {
+  const bg = document.getElementById('stars-bg');
+  for (let i=0;i<120;i++) {
+    const s = document.createElement('div');
+    s.className='star';
+    const size = 1+Math.random()*2.5;
+    s.style.cssText=`
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${size}px;height:${size}px;
+      --d:${2+Math.random()*4}s;
+      animation-delay:${Math.random()*4}s;
+    `;
+    bg.appendChild(s);
+  }
+}
+
+// ============================================================
+//  PWA – MANIFEST + SERVICE WORKER + INSTALL PROMPT
+// ============================================================
+(function initPWA() {
+
+  // ── 1. Inject Web App Manifest as data-URI ──────────────
+  const manifest = {
+    name: 'EduSmart – Nauka z klasą!',
+    short_name: 'EduSmart',
+    description: 'Interaktywna aplikacja do nauki dla klas 4–6',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#0d1b3e',
+    theme_color: '#0d1b3e',
+    orientation: 'portrait-primary',
+    lang: 'pl',
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230d1b3e'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='serif'%3E%F0%9F%A6%89%3C/text%3E%3C/svg%3E",
+        sizes: '192x192',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      },
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230d1b3e'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='serif'%3E%F0%9F%A6%89%3C/text%3E%3C/svg%3E",
+        sizes: '512x512',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const manifestURL  = URL.createObjectURL(manifestBlob);
+  document.getElementById('pwa-manifest').href = manifestURL;
+
+  // ── 2. Register Service Worker (inline via blob) ─────────
+  const swCode = `
+const CACHE = 'edusmart-v1';
+const ASSETS = [self.location.href.replace('/sw.js','') || '/'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(response => {
+        if (!response || response.status !== 200) return response;
+        const clone = response.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return response;
+      }).catch(() => caches.match('/'));
+    })
+  );
+});
+`;
+  if ('serviceWorker' in navigator) {
+    const swBlob = new Blob([swCode], {type:'application/javascript'});
+    const swURL  = URL.createObjectURL(swBlob);
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(swURL, {scope: './'})
+        .catch(e => console.log('SW reg failed:', e));
+    });
+  }
+
+  // ── 3. Install prompt banner ─────────────────────────────
+  let deferredPrompt = null;
+  const banner    = document.getElementById('pwa-install-banner');
+  const installBtn= document.getElementById('pwa-install-btn');
+  const dismissBtn= document.getElementById('pwa-dismiss-btn');
+
+  // Hide banner if already installed / dismissed
+  const dismissed = localStorage.getItem('pwa_dismissed');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone;
+  if (isStandalone || dismissed) return;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(() => banner.classList.add('show'), 3000);
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      // Fallback: show manual instructions
+      showManualInstallGuide();
+      return;
+    }
+    banner.classList.remove('show');
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') showAchievement('📱 Aplikacja zainstalowana!');
+    deferredPrompt = null;
+  });
+
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa_dismissed', '1');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    showAchievement('📱 Aplikacja zainstalowana!');
+    deferredPrompt = null;
+  });
+})();
+
+function showManualInstallGuide() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,.85);
+    display:flex;align-items:center;justify-content:center;
+    padding:1.5rem;
+    animation:fadeSlideIn .3s ease;
+  `;
+  overlay.innerHTML = `
+    <div style="background:#162150;border:2px solid rgba(255,255,255,.15);border-radius:24px;
+      padding:2rem 1.5rem;max-width:380px;width:100%;text-align:center;position:relative">
+      <button onclick="this.closest('div').parentElement.remove()" style="
+        position:absolute;top:1rem;right:1rem;background:none;border:none;
+        color:#8fa3c8;font-size:1.4rem;cursor:pointer">✕</button>
+      <div style="font-size:3rem;margin-bottom:1rem">📲</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;margin-bottom:1rem;color:#f0f4ff">
+        Jak zainstalować?
+      </div>
+      <div style="font-size:.9rem;color:#8fa3c8;font-weight:700;line-height:1.7;text-align:left">
+        <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:1rem;margin-bottom:.8rem">
+          <div style="color:#0be881;font-family:'Fredoka One',cursive;font-size:1rem;margin-bottom:.5rem">
+            🤖 Android (Chrome)
+          </div>
+          1. Otwórz tę stronę w Chrome<br>
+          2. Kliknij menu ⋮ (3 kropki, górny prawy róg)<br>
+          3. Wybierz <strong style="color:#f0f4ff">„Dodaj do ekranu głównego"</strong><br>
+          4. Potwierdź → Gotowe! 🎉
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:1rem">
+          <div style="color:#48dbfb;font-family:'Fredoka One',cursive;font-size:1rem;margin-bottom:.5rem">
+            📱 Samsung Internet
+          </div>
+          1. Kliknij menu ☰ (dół ekranu)<br>
+          2. Wybierz <strong style="color:#f0f4ff">„Dodaj stronę do"</strong><br>
+          3. Wybierz <strong style="color:#f0f4ff">„Ekran główny"</strong><br>
+          4. Potwierdź → Gotowe! 🎉
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+}
+
+window.addEventListener('load',()=>{
+  createStars();
+  loadSavedData();
+  setTimeout(()=>{
+    document.getElementById('loader').classList.add('hidden');
+  }, 2000);
+
+  // Unlock AudioContext on first interaction
+  document.addEventListener('click',()=>{ if(AC.state==='suspended') AC.resume(); },{once:true});
+});
+</script>
+</body>
+</html>
