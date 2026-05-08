@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060614" id="themeColorMeta">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EduSmart">
+<link rel="manifest" id="pwaManifest">
+<title>EduSmart</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────── */
+:root{
+  --bg:#060614; --bg2:#0c0c2a; --bg3:#131340;
+  --surface:rgba(255,255,255,.04);
+  --surface2:rgba(255,255,255,.07);
+  --surface3:rgba(255,255,255,.11);
+  --border:rgba(255,255,255,.08);
+  --border2:rgba(255,255,255,.15);
+
+  --neon:#7c3aed;   /* violet */
+  --neon2:#06b6d4;  /* cyan */
+  --neon3:#f59e0b;  /* amber */
+  --neon4:#10b981;  /* emerald */
+  --neon5:#f43f5e;  /* rose */
+
+  --text:#f1f0ff; --text2:#a8a4d4; --text3:#5e5a8a;
+
+  --math:#f43f5e; --polish:#06b6d4; --english:#f59e0b;
+  --nature:#10b981; --history:#a855f7;
+
+  --r12:12px; --r16:16px; --r20:20px; --r24:24px; --r32:32px;
+  --font-head:'Syne',sans-serif;
+  --font-body:'Space Grotesk',sans-serif;
+  --font-mono:'Syne Mono',monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --spring:cubic-bezier(.175,.885,.32,1.275);
+}
+
+/* ─────────────────────────────────────────
+   BASE
+───────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+button,input{font-family:var(--font-body)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px}
+
+/* ─────────────────────────────────────────
+   BACKGROUND MESH
+───────────────────────────────────────── */
+#bgCanvas{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;opacity:.5;
+}
+
+/* ─────────────────────────────────────────
+   LOADER
+───────────────────────────────────────── */
+#loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:20px;
+  transition:opacity .5s var(--ease),visibility .5s;
+}
+#loader.out{opacity:0;visibility:hidden;pointer-events:none}
+.loader-mark{
+  width:80px;height:80px;border-radius:24px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.4rem;
+  box-shadow:0 0 40px rgba(124,58,237,.5),0 0 80px rgba(6,182,212,.2);
+  animation:loaderPulse 1.2s var(--ease) infinite alternate;
+}
+@keyframes loaderPulse{
+  0%{transform:scale(1);box-shadow:0 0 40px rgba(124,58,237,.5)}
+  100%{transform:scale(1.08);box-shadow:0 0 60px rgba(124,58,237,.8),0 0 100px rgba(6,182,212,.4)}
+}
+.loader-title{
+  font-family:var(--font-head);font-size:2.2rem;font-weight:800;
+  background:linear-gradient(90deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.loader-track{
+  width:200px;height:3px;background:var(--surface3);
+  border-radius:99px;overflow:hidden;
+}
+.loader-bar{
+  height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));
+  border-radius:99px;animation:loaderBar 2s var(--ease) forwards;
+}
+@keyframes loaderBar{from{width:0}to{width:100%}}
+.loader-hint{font-size:.82rem;color:var(--text3);font-weight:500}
+
+/* ─────────────────────────────────────────
+   SCREENS
+───────────────────────────────────────── */
+.screen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  padding:max(env(safe-area-inset-top),16px) 16px max(env(safe-area-inset-bottom),24px);
+  display:none;flex-direction:column;align-items:center;
+}
+.screen.active{
+  display:flex;
+  animation:screenIn .38s var(--ease);
+}
+@keyframes screenIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.page-content{width:100%;max-width:540px;display:flex;flex-direction:column;align-items:center;gap:12px}
+
+/* ─────────────────────────────────────────
+   TOP BAR
+───────────────────────────────────────── */
+.topbar{
+  width:100%;max-width:540px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0 8px;
+}
+.topbar-title{font-family:var(--font-head);font-size:1.15rem;font-weight:800}
+.topbar-actions{display:flex;gap:8px}
+.icon-btn{
+  width:40px;height:40px;border-radius:var(--r12);
+  background:var(--surface2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;cursor:pointer;
+  transition:background .2s var(--ease),transform .15s var(--ease);
+  flex-shrink:0;
+}
+.icon-btn:hover{background:var(--surface3);transform:scale(1.07)}
+.icon-btn:active{transform:scale(.93)}
+.back-btn{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:50px;padding:7px 14px 7px 10px;
+  cursor:pointer;font-size:.84rem;font-weight:600;color:var(--text2);
+  transition:all .2s var(--ease);
+}
+.back-btn:hover{background:var(--surface3);color:var(--text);transform:translateX(-2px)}
+.back-btn svg{width:16px;height:16px;opacity:.6}
+
+/* ─────────────────────────────────────────
+   PROFILES SCREEN
+───────────────────────────────────────── */
+.brand-hero{text-align:center;padding:24px 0 8px}
+.brand-owl{font-size:4.5rem;display:block;animation:owlFloat 3s ease-in-out infinite}
+@keyframes owlFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+.brand-name{
+  font-family:var(--font-head);font-size:2.6rem;font-weight:800;
+  background:linear-gradient(135deg,var(--neon) 0%,var(--neon2) 50%,var(--neon3) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(124,58,237,.4));
+}
+.brand-sub{color:var(--text3);font-size:.9rem;font-weight:500;margin-top:4px}
+
+.profiles-heading{
+  font-family:var(--font-head);font-size:.8rem;font-weight:700;
+  color:var(--text3);letter-spacing:.12em;text-transform:uppercase;
+  align-self:flex-start;
+}
+.profiles-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+  width:100%;
+}
+.profile-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r20);padding:20px 14px;text-align:center;
+  cursor:pointer;transition:all .25s var(--ease);
+  position:relative;overflow:hidden;
+}
+.profile-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,var(--pc,var(--neon)) 0%,transparent 70%);
+  opacity:0;transition:opacity .25s;
+}
+.profile-card:hover{transform:translateY(-5px) scale(1.02);border-color:var(--pc,var(--neon));box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.profile-card:hover::before{opacity:.08}
+.profile-card:active{transform:scale(.97)}
+.p-avatar{
+  width:60px;height:60px;border-radius:18px;
+  background:linear-gradient(135deg,var(--pc,var(--neon)),color-mix(in srgb,var(--pc,var(--neon)) 60%,var(--neon2)));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.9rem;margin:0 auto 10px;
+  box-shadow:0 8px 24px color-mix(in srgb,var(--pc,var(--neon)) 40%,transparent);
+}
+.p-name{font-family:var(--font-head);font-size:1.05rem;font-weight:700}
+.p-level{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.72rem;font-weight:600;
+  background:var(--surface2);border-radius:50px;padding:3px 8px;
+  margin-top:6px;color:var(--text2);
+}
+.p-level-dot{width:6px;height:6px;border-radius:50%;background:var(--neon3)}
+.p-xp-bar{
+  width:100%;height:3px;background:var(--surface3);
+  border-radius:99px;margin-top:8px;overflow:hidden;
+}
+.p-xp-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pc,var(--neon)),var(--neon2))}
+
+.add-profile{
+  border:2px dashed var(--border2);border-radius:var(--r20);
+  min-height:148px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:all .2s var(--ease);
+  background:transparent;
+}
+.add-profile:hover{border-color:var(--neon);background:rgba(124,58,237,.05)}
+.add-profile-icon{
+  width:44px;height:44px;border-radius:50%;
+  background:var(--surface2);display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;transition:transform .2s var(--ease);
+}
+.add-profile:hover .add-profile-icon{transform:scale(1.15) rotate(90deg)}
+.add-profile span{font-size:.85rem;font-weight:600;color:var(--text3)}
+
+/* ─────────────────────────────────────────
+   MODAL
+───────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:modalBgIn .25s ease;
+}
+@keyframes modalBgIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r24);padding:28px 22px;
+  width:100%;max-width:360px;
+  animation:modalIn .3s var(--spring);
+}
+@keyframes modalIn{from{transform:scale(.85) translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.modal-title{font-family:var(--font-head);font-size:1.4rem;font-weight:800;text-align:center;margin-bottom:18px}
+.avatar-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px}
+.av-opt{
+  width:48px;height:48px;border-radius:14px;
+  background:var(--surface2);border:2px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;cursor:pointer;transition:all .2s var(--ease);
+}
+.av-opt.sel{border-color:var(--neon);background:rgba(124,58,237,.15);transform:scale(1.15)}
+.color-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.cl-opt{
+  width:30px;height:30px;border-radius:50%;cursor:pointer;
+  border:3px solid transparent;transition:all .2s var(--ease);
+}
+.cl-opt.sel{border-color:#fff;transform:scale(1.25)}
+.m-input{
+  width:100%;padding:12px 14px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r12);font-size:.95rem;font-weight:600;
+  color:var(--text);outline:none;margin-bottom:12px;
+  transition:border-color .2s;
+}
+.m-input:focus{border-color:var(--neon)}
+.m-input::placeholder{color:var(--text3)}
+.m-btn{
+  width:100%;padding:13px;border:none;border-radius:var(--r12);
+  font-family:var(--font-head);font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  color:#fff;cursor:pointer;transition:all .2s var(--ease);
+}
+.m-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,.4)}
+.m-close{
+  display:block;text-align:center;margin-top:10px;
+  color:var(--text3);font-size:.84rem;cursor:pointer;
+}
+.m-close:hover{color:var(--text2)}
+
+/* ─────────────────────────────────────────
+   HOME SCREEN
+───────────────────────────────────────── */
+.home-header{
+  width:100%;max-width:540px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0 0;
+}
+.profile-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:50px;padding:5px 12px 5px 5px;cursor:pointer;
+  transition:all .2s var(--ease);
+}
+.profile-pill:hover{background:var(--surface3)}
+.pill-avatar{
+  width:30px;height:30px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.pill-name{font-size:.84rem;font-weight:700}
+
+/* Hero banner */
+.hero-banner{
+  width:100%;border-radius:var(--r24);overflow:hidden;
+  background:linear-gradient(135deg,var(--bg3) 0%,rgba(124,58,237,.2) 100%);
+  border:1px solid rgba(124,58,237,.25);
+  padding:22px;position:relative;
+}
+.hero-banner::after{
+  content:'';position:absolute;right:-20px;top:-20px;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,58,237,.3),transparent 70%);
+  pointer-events:none;
+}
+.hero-greeting{font-size:.82rem;font-weight:600;color:var(--text3);margin-bottom:4px}
+.hero-name{font-family:var(--font-head);font-size:1.7rem;font-weight:800}
+.hero-sub{font-size:.84rem;color:var(--text2);font-weight:500;margin-top:4px}
+.hero-row{display:flex;gap:16px;margin-top:16px}
+.hero-stat{display:flex;flex-direction:column;gap:2px}
+.hero-stat-num{font-family:var(--font-head);font-size:1.3rem;font-weight:800}
+.hero-stat-lbl{font-size:.72rem;color:var(--text3);font-weight:600}
+.hero-level{
+  margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;
+}
+.level-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--font-mono);font-size:.8rem;
+  background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);
+  border-radius:50px;padding:4px 10px;
+}
+.xp-mini-bar{width:80px;height:4px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.xp-mini-fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));border-radius:99px;transition:width .8s var(--ease)}
+
+/* Streak card */
+.streak-card{
+  width:100%;border-radius:var(--r20);
+  background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(244,63,94,.08));
+  border:1px solid rgba(245,158,11,.22);
+  padding:16px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.streak-left{display:flex;align-items:center;gap:12px}
+.streak-fire{font-size:2.2rem;animation:firePulse 1.5s ease-in-out infinite}
+@keyframes firePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.streak-num{font-family:var(--font-head);font-size:2rem;font-weight:800;line-height:1}
+.streak-lbl{font-size:.74rem;color:var(--text3);font-weight:600;margin-top:2px}
+.streak-dots{display:flex;gap:5px}
+.s-dot{
+  width:26px;height:26px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;
+  background:var(--surface3);color:var(--text3);
+  transition:all .3s var(--ease);
+}
+.s-dot.lit{background:rgba(245,158,11,.25);color:var(--neon3);border:1px solid rgba(245,158,11,.4)}
+.s-dot.today{background:var(--neon3);color:#000}
+
+/* Daily challenge */
+.daily-card{
+  width:100%;border-radius:var(--r20);
+  background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(6,182,212,.1));
+  border:1px solid rgba(124,58,237,.28);
+  padding:16px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  cursor:pointer;transition:all .25s var(--ease);
+}
+.daily-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(124,58,237,.2)}
+.daily-card:active{transform:scale(.98)}
+.daily-card.done{opacity:.55;cursor:default}
+.daily-icon{font-size:2rem;flex-shrink:0}
+.daily-info{flex:1}
+.daily-title{font-family:var(--font-head);font-size:1rem;font-weight:700}
+.daily-sub{font-size:.75rem;color:var(--text3);font-weight:500;margin-top:2px}
+.daily-chip{
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  color:#fff;font-family:var(--font-mono);font-size:.78rem;font-weight:700;
+  border-radius:50px;padding:5px 11px;white-space:nowrap;flex-shrink:0;
+}
+
+/* Section heading */
+.sec-head{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+}
+.sec-title{font-family:var(--font-head);font-size:.78rem;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+.sec-link{font-size:.78rem;color:var(--neon2);font-weight:600;cursor:pointer}
+
+/* Class cards */
+.class-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.class-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r20);padding:18px 10px;text-align:center;
+  cursor:pointer;transition:all .25s var(--ease);
+  position:relative;overflow:hidden;
+}
+.class-card::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--cc,var(--neon)),color-mix(in srgb,var(--cc,var(--neon)) 60%,var(--neon2)));
+  transform:scaleX(0);transition:transform .25s var(--ease);
+}
+.class-card:hover{transform:translateY(-5px);border-color:var(--cc,var(--neon));box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.class-card:hover::before{transform:scaleX(1)}
+.cc-num{font-family:var(--font-head);font-size:2.4rem;font-weight:800;color:var(--cc,var(--neon))}
+.cc-lbl{font-size:.72rem;color:var(--text3);font-weight:600;margin-top:2px}
+.cc-prog{
+  height:3px;background:var(--surface3);border-radius:99px;
+  margin-top:10px;overflow:hidden;
+}
+.cc-prog-fill{
+  height:100%;background:var(--cc,var(--neon));
+  border-radius:99px;transition:width 1s var(--ease);
+}
+
+/* Quick access */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.quick-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r20);padding:16px 14px;
+  cursor:pointer;transition:all .25s var(--ease);
+}
+.quick-card:hover{background:var(--surface2);transform:translateY(-3px)}
+.q-ico{font-size:1.7rem;display:block;margin-bottom:7px}
+.q-title{font-family:var(--font-head);font-size:.95rem;font-weight:700}
+.q-sub{font-size:.73rem;color:var(--text3);font-weight:500;margin-top:3px}
+
+/* Stats strip */
+.stats-strip{
+  width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.stat-chip{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r12);padding:10px 6px;text-align:center;
+}
+.sc-num{font-family:var(--font-head);font-size:1.35rem;font-weight:700}
+.sc-lbl{font-size:.65rem;color:var(--text3);font-weight:600;margin-top:2px}
+
+/* ─────────────────────────────────────────
+   SUBJECTS
+───────────────────────────────────────── */
+.subject-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  width:100%;
+}
+.subj-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r20);padding:18px 14px;
+  cursor:pointer;transition:all .25s var(--ease);
+  position:relative;overflow:hidden;
+}
+.subj-card::after{
+  content:'';position:absolute;top:0;right:0;
+  width:60px;height:60px;
+  background:radial-gradient(circle at 100% 0%,var(--sc) 0%,transparent 70%);
+  opacity:.15;pointer-events:none;
+}
+.subj-card:hover{transform:translateY(-5px);border-color:var(--sc);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.subj-card[data-s="history"]{grid-column:1/-1}
+.s-ico{font-size:2rem;display:block;margin-bottom:8px}
+.s-name{font-family:var(--font-head);font-size:1rem;font-weight:700;color:var(--sc)}
+.s-desc{font-size:.73rem;color:var(--text3);font-weight:500;margin-top:3px}
+.s-prog{height:3px;background:var(--surface3);border-radius:99px;margin-top:10px;overflow:hidden}
+.s-prog-fill{height:100%;background:var(--sc);border-radius:99px;transition:width 1s var(--ease)}
+
+/* ─────────────────────────────────────────
+   CHAPTERS
+───────────────────────────────────────── */
+.chapter-list{display:flex;flex-direction:column;gap:8px;width:100%}
+.chap-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r16);padding:14px 16px;
+  cursor:pointer;transition:all .22s var(--ease);
+  display:flex;align-items:center;gap:12px;
+}
+.chap-card:hover{background:var(--surface2);border-color:var(--cc,var(--neon));transform:translateX(4px)}
+.chap-num{
+  width:42px;height:42px;border-radius:13px;
+  background:color-mix(in srgb,var(--cc,var(--neon)) 20%,transparent);
+  border:1px solid color-mix(in srgb,var(--cc,var(--neon)) 35%,transparent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;flex-shrink:0;
+}
+.chap-info{flex:1;min-width:0}
+.chap-name{font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chap-meta{font-size:.72rem;color:var(--text3);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:6px}
+.chap-best{color:var(--neon4);font-weight:700}
+.chap-prog{width:80px;height:4px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:5px}
+.chap-prog-fill{height:100%;background:var(--cc,var(--neon));border-radius:99px}
+.chap-arrow{color:var(--text3);font-size:1rem;flex-shrink:0;transition:transform .2s}
+.chap-card:hover .chap-arrow{transform:translateX(3px);color:var(--cc,var(--neon))}
+.chap-done{font-size:1rem;flex-shrink:0}
+
+/* ─────────────────────────────────────────
+   QUIZ
+───────────────────────────────────────── */
+.quiz-topbar{
+  width:100%;max-width:600px;
+  display:flex;align-items:center;gap:10px;padding:12px 0 8px;
+}
+.quiz-subj-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:50px;padding:5px 12px;
+  font-size:.78rem;font-weight:700;color:var(--qc,var(--neon));
+}
+.quiz-score-pill{
+  margin-left:auto;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:50px;padding:5px 12px;
+  font-family:var(--font-mono);font-size:.78rem;font-weight:700;
+}
+.quiz-streak-pill{
+  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);
+  border-radius:50px;padding:5px 10px;
+  font-size:.78rem;font-weight:700;color:var(--neon3);
+}
+
+.quiz-prog-wrap{
+  width:100%;max-width:600px;
+  display:flex;flex-direction:column;gap:5px;
+}
+.quiz-prog-track{
+  height:8px;background:var(--surface3);
+  border-radius:99px;overflow:hidden;
+}
+.quiz-prog-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--qc,var(--neon)),color-mix(in srgb,var(--qc,var(--neon)) 70%,var(--neon2)));
+  border-radius:99px;transition:width .45s var(--ease);
+}
+.quiz-prog-label{
+  display:flex;justify-content:space-between;
+  font-size:.72rem;color:var(--text3);font-weight:600;
+}
+
+/* Question card */
+.question-card{
+  width:100%;max-width:600px;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r24);padding:22px;
+  position:relative;overflow:hidden;
+}
+.qcard-glow{
+  position:absolute;top:-40px;right:-40px;
+  width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--qc,var(--neon)) 30%,transparent),transparent 70%);
+  pointer-events:none;
+}
+.q-top-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.q-num{
+  font-family:var(--font-mono);font-size:.72rem;
+  color:var(--qc,var(--neon));border:1px solid color-mix(in srgb,var(--qc,var(--neon)) 40%,transparent);
+  background:color-mix(in srgb,var(--qc,var(--neon)) 10%,transparent);
+  border-radius:8px;padding:3px 8px;flex-shrink:0;margin-top:2px;
+}
+.q-text{
+  font-size:clamp(1rem,2.8vw,1.15rem);font-weight:600;
+  line-height:1.5;flex:1;
+}
+.tts-btn{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:var(--surface3);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;cursor:pointer;transition:all .2s;
+}
+.tts-btn:hover{background:var(--surface2)}
+.tts-btn.on{
+  background:color-mix(in srgb,var(--qc,var(--neon)) 15%,transparent);
+  border-color:color-mix(in srgb,var(--qc,var(--neon)) 50%,transparent);
+  animation:ttsPulse .8s ease-in-out infinite;
+}
+@keyframes ttsPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 12px var(--qc,var(--neon))}}
+
+/* Options */
+.options{display:flex;flex-direction:column;gap:8px}
+.opt{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r16);padding:12px 14px;
+  cursor:pointer;transition:all .22s var(--ease);
+  font-size:.92rem;font-weight:600;color:var(--text);
+}
+.opt:hover:not(:disabled){
+  background:var(--surface3);
+  border-color:color-mix(in srgb,var(--qc,var(--neon)) 60%,transparent);
+  transform:translateX(3px);
+}
+.opt:disabled{cursor:default}
+.opt.cor{
+  background:rgba(16,185,129,.12);border-color:var(--neon4);color:var(--neon4);
+}
+.opt.wrg{
+  background:rgba(244,63,94,.12);border-color:var(--neon5);color:var(--neon5);
+}
+.opt-letter{
+  width:28px;height:28px;border-radius:8px;flex-shrink:0;
+  background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:.76rem;font-weight:700;
+  transition:all .22s;
+}
+.opt.cor .opt-letter{background:var(--neon4);color:#000}
+.opt.wrg .opt-letter{background:var(--neon5);color:#fff}
+
+/* Text input */
+.text-q-wrap{display:flex;flex-direction:column;gap:8px}
+.text-q-input{
+  width:100%;padding:12px 14px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r12);font-size:.95rem;font-weight:600;
+  color:var(--text);outline:none;
+  transition:border-color .2s;
+}
+.text-q-input:focus{border-color:var(--qc,var(--neon))}
+.text-q-input.cor{border-color:var(--neon4);background:rgba(16,185,129,.08)}
+.text-q-input.wrg{border-color:var(--neon5);background:rgba(244,63,94,.08)}
+.text-q-input::placeholder{color:var(--text3)}
+.check-btn{
+  padding:12px;border:none;border-radius:var(--r12);
+  background:linear-gradient(135deg,var(--qc,var(--neon)),var(--neon2));
+  color:#fff;font-family:var(--font-head);font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:all .2s var(--ease);
+}
+.check-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.4)}
+.check-btn:disabled{opacity:.5;cursor:default;transform:none}
+
+/* Feedback */
+.feedback{
+  margin-top:12px;padding:10px 14px;border-radius:var(--r12);
+  font-weight:700;font-size:.9rem;text-align:center;
+  animation:fbIn .3s var(--spring);
+}
+@keyframes fbIn{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.feedback.ok{background:rgba(16,185,129,.12);color:var(--neon4);border:1px solid rgba(16,185,129,.25)}
+.feedback.no{background:rgba(244,63,94,.12);color:var(--neon5);border:1px solid rgba(244,63,94,.25)}
+
+/* Timer ring */
+.timer-outer{
+  display:flex;justify-content:center;margin-top:10px;
+}
+.timer-svg{transform:rotate(-90deg)}
+.t-track{fill:none;stroke:var(--surface3);stroke-width:5}
+.t-arc{fill:none;stroke:var(--qc,var(--neon));stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.t-text{
+  font-family:var(--font-mono);font-size:1rem;font-weight:700;
+  fill:var(--text);transition:fill .3s;
+}
+.t-text.urg{fill:var(--neon5);animation:urgBlink .5s ease-in-out infinite alternate}
+@keyframes urgBlink{from{opacity:1}to{opacity:.5}}
+
+/* Next btn */
+.next-btn{
+  width:100%;max-width:600px;padding:15px;border:none;
+  border-radius:var(--r16);
+  background:linear-gradient(135deg,var(--qc,var(--neon)),color-mix(in srgb,var(--qc,var(--neon)) 70%,var(--neon2)));
+  color:#fff;font-family:var(--font-head);font-size:1.05rem;font-weight:700;
+  cursor:pointer;transition:all .25s var(--ease);
+  display:none;box-shadow:0 6px 24px color-mix(in srgb,var(--qc,var(--neon)) 35%,transparent);
+}
+.next-btn:hover{transform:translateY(-3px);box-shadow:0 12px 32px color-mix(in srgb,var(--qc,var(--neon)) 50%,transparent)}
+.next-btn.show{display:block;animation:fbIn .35s var(--spring)}
+
+/* XP bar (quiz) */
+.quiz-xp-row{
+  width:100%;max-width:600px;
+  display:flex;align-items:center;gap:8px;
+}
+.xp-lbl{font-family:var(--font-mono);font-size:.72rem;color:var(--text3);white-space:nowrap}
+.xp-track{flex:1;height:5px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--neon3),var(--neon));border-radius:99px;transition:width .6s var(--ease)}
+
+/* ─────────────────────────────────────────
+   RESULTS
+───────────────────────────────────────── */
+.results-wrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:12px}
+.res-hero{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r24);padding:24px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.res-hero-glow{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:200px;height:100px;
+  background:radial-gradient(ellipse,color-mix(in srgb,var(--qc,var(--neon)) 25%,transparent),transparent 70%);
+  pointer-events:none;
+}
+.res-emoji{font-size:4rem;display:block;margin-bottom:8px;animation:resFloat 2s ease-in-out infinite}
+@keyframes resFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.res-title{font-family:var(--font-head);font-size:1.9rem;font-weight:800}
+.res-title.gr{color:var(--neon4)} .res-title.gd{color:var(--neon3)} .res-title.tr{color:var(--neon5)}
+.res-chap{font-size:.82rem;color:var(--text3);font-weight:500;margin-top:4px}
+/* Score SVG ring */
+.score-ring{width:130px;height:130px;margin:16px auto;position:relative}
+.sr-svg{transform:rotate(-90deg)}
+.sr-track{fill:none;stroke:var(--surface3);stroke-width:7}
+.sr-fill{fill:none;stroke:var(--qc,var(--neon));stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1.4s var(--ease)}
+.sr-text{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.sr-pts{font-family:var(--font-head);font-size:2rem;font-weight:800;line-height:1}
+.sr-of{font-size:.74rem;color:var(--text3);font-weight:600}
+.res-stats{display:flex;justify-content:center;gap:20px;margin-top:12px}
+.rs-item{text-align:center}
+.rs-num{font-family:var(--font-head);font-size:1.3rem;font-weight:700}
+.rs-num.c{color:var(--neon4)} .rs-num.w{color:var(--neon5)} .rs-num.t{color:var(--neon2)}
+.rs-lbl{font-size:.68rem;color:var(--text3);font-weight:600;margin-top:2px}
+
+/* XP earned */
+.xp-earned-card{
+  background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(244,63,94,.07));
+  border:1px solid rgba(245,158,11,.22);
+  border-radius:var(--r16);padding:14px 16px;
+}
+.xe-title{font-family:var(--font-head);font-size:.95rem;font-weight:700;color:var(--neon3);margin-bottom:8px}
+.xe-row{display:flex;align-items:center;gap:8px}
+.xe-bar{flex:1;height:7px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.xe-fill{height:100%;background:linear-gradient(90deg,var(--neon3),var(--neon));border-radius:99px;transition:width 1.2s var(--ease)}
+.xe-text{font-family:var(--font-mono);font-size:.78rem;font-weight:700;color:var(--neon3);white-space:nowrap}
+.xe-sub{font-size:.72rem;color:var(--text3);font-weight:600;margin-top:5px}
+
+/* Badges earned */
+.badges-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r16);padding:14px 16px;
+}
+.bc-title{font-family:var(--font-head);font-size:.84rem;font-weight:700;color:var(--text3);margin-bottom:10px}
+.badges-row{display:flex;flex-wrap:wrap;gap:7px}
+.badge-chip{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:50px;padding:5px 10px;
+  font-size:.75rem;font-weight:700;
+  animation:fbIn .4s var(--spring);
+}
+.badge-chip.new-b{
+  border-color:var(--neon3);
+  background:rgba(245,158,11,.1);
+  box-shadow:0 0 12px rgba(245,158,11,.25);
+}
+.badge-new-tag{
+  font-size:.6rem;background:var(--neon3);color:#000;
+  border-radius:4px;padding:1px 4px;font-weight:900;
+}
+
+/* Result buttons */
+.res-btns{display:flex;flex-direction:column;gap:8px;width:100%}
+.rb{
+  width:100%;padding:13px;border:none;border-radius:var(--r16);
+  font-family:var(--font-head);font-size:.98rem;font-weight:700;
+  cursor:pointer;transition:all .22s var(--ease);
+}
+.rb.primary{
+  background:linear-gradient(135deg,var(--qc,var(--neon)),color-mix(in srgb,var(--qc,var(--neon)) 70%,var(--neon2)));
+  color:#fff;
+  box-shadow:0 4px 20px color-mix(in srgb,var(--qc,var(--neon)) 35%,transparent);
+}
+.rb.primary:hover{transform:translateY(-2px)}
+.rb.secondary{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}
+.rb.secondary:hover{background:var(--surface3);color:var(--text)}
+
+/* ─────────────────────────────────────────
+   DASHBOARD
+───────────────────────────────────────── */
+.dash-grid{width:100%;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dash-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r20);padding:14px;
+}
+.dash-card.span2{grid-column:1/-1}
+.dc-title{font-family:var(--font-head);font-size:.74rem;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+
+.level-center{text-align:center}
+.lc-num{
+  font-family:var(--font-head);font-size:3rem;font-weight:800;
+  background:linear-gradient(135deg,var(--neon3),var(--neon));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.lc-lbl{font-size:.75rem;color:var(--text3);font-weight:600}
+.lc-bar{height:5px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:7px}
+.lc-fill{height:100%;background:linear-gradient(90deg,var(--neon3),var(--neon));border-radius:99px}
+.lc-xp{font-size:.7rem;color:var(--text3);font-weight:600;margin-top:4px}
+
+.mini-stats{display:flex;flex-direction:column;gap:7px}
+.ms-row{display:flex;justify-content:space-between;align-items:center;font-size:.82rem}
+.ms-lbl{color:var(--text3);font-weight:600}
+.ms-val{font-family:var(--font-head);font-weight:700}
+
+.spb-list{display:flex;flex-direction:column;gap:9px}
+.spb{display:flex;flex-direction:column;gap:4px}
+.spb-row{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700}
+.spb-pct{color:var(--text3)}
+.spb-track{height:6px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.spb-fill{height:100%;border-radius:99px;transition:width 1s var(--ease)}
+
+/* Activity heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hm-cell{
+  aspect-ratio:1;border-radius:3px;
+  background:var(--surface3);transition:background .3s;
+}
+.hm-cell.a1{background:rgba(124,58,237,.25)}
+.hm-cell.a2{background:rgba(124,58,237,.5)}
+.hm-cell.a3{background:rgba(124,58,237,.75)}
+.hm-cell.a4{background:var(--neon)}
+
+/* Best scores */
+.score-list{display:flex;flex-direction:column;gap:6px}
+.sl-item{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border-radius:var(--r12);padding:8px 10px;
+}
+.sl-rank{
+  font-family:var(--font-mono);font-size:.72rem;font-weight:700;
+  color:var(--text3);width:18px;text-align:center;flex-shrink:0;
+}
+.sl-info{flex:1;min-width:0}
+.sl-name{font-size:.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-sub{font-size:.68rem;color:var(--text3);font-weight:600;margin-top:2px}
+.sl-score{font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--neon4);flex-shrink:0}
+
+/* Badges grid in dash */
+.badges-grid-dash{display:flex;flex-wrap:wrap;gap:6px}
+.bd-item{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:4px 8px;
+  font-size:.73rem;font-weight:700;
+}
+
+/* ─────────────────────────────────────────
+   FLASHCARDS
+───────────────────────────────────────── */
+.fc-wrap{width:100%;max-width:480px;perspective:900px;cursor:pointer}
+.flashcard{
+  width:100%;height:200px;position:relative;
+  transform-style:preserve-3d;transition:transform .5s var(--spring);
+}
+.flashcard.flipped{transform:rotateY(180deg)}
+.fc-side{
+  position:absolute;inset:0;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r24);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;text-align:center;
+  backface-visibility:hidden;
+}
+.fc-back{
+  background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(6,182,212,.08));
+  border-color:rgba(124,58,237,.3);
+  transform:rotateY(180deg);
+}
+.fc-lang{font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.fc-word{font-family:var(--font-head);font-size:2.4rem;font-weight:800;line-height:1.2}
+.fc-hint{font-size:.75rem;color:var(--text3);font-weight:500;margin-top:8px}
+.fc-cat{font-size:.75rem;color:var(--neon2);font-weight:600;margin-top:5px}
+
+.fc-controls{display:flex;gap:10px;width:100%;max-width:480px}
+.fc-no,.fc-yes{
+  flex:1;padding:13px;border:none;border-radius:var(--r16);
+  font-family:var(--font-head);font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:all .22s var(--ease);
+}
+.fc-no{
+  background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.25);
+  color:var(--neon5);
+}
+.fc-no:hover{background:rgba(244,63,94,.22);transform:translateY(-2px)}
+.fc-yes{
+  background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);
+  color:var(--neon4);
+}
+.fc-yes:hover{background:rgba(16,185,129,.22);transform:translateY(-2px)}
+.fc-prog-row{
+  display:flex;align-items:center;gap:8px;width:100%;max-width:480px;
+}
+.fc-prog-track{flex:1;height:6px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.fc-prog-fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));border-radius:99px;transition:width .4s var(--ease)}
+.fc-count{font-family:var(--font-mono);font-size:.75rem;color:var(--text3)}
+.fc-stats-row{
+  display:flex;gap:16px;width:100%;max-width:480px;justify-content:center;
+}
+.fcs{text-align:center;font-size:.78rem;font-weight:700;color:var(--text3)}
+.fcs span{display:block;font-family:var(--font-head);font-size:1.25rem;margin-bottom:2px}
+.fcs span.k{color:var(--neon4)} .fcs span.u{color:var(--neon5)} .fcs span.r{color:var(--neon2)}
+
+/* ─────────────────────────────────────────
+   SETTINGS
+───────────────────────────────────────── */
+.settings-list{width:100%;max-width:480px;display:flex;flex-direction:column;gap:8px}
+.sg-section{
+  font-family:var(--font-head);font-size:.72rem;font-weight:700;
+  color:var(--text3);letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 0 2px;border-bottom:1px solid var(--border);
+}
+.sg-row{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r16);padding:13px 16px;
+  display:flex;align-items:center;gap:12px;
+}
+.sg-ico{font-size:1.3rem;flex-shrink:0}
+.sg-info{flex:1}
+.sg-lbl{font-weight:700;font-size:.9rem}
+.sg-sub{font-size:.72rem;color:var(--text3);font-weight:500;margin-top:2px}
+.toggle{
+  width:48px;height:26px;border-radius:99px;
+  background:var(--surface3);position:relative;
+  cursor:pointer;transition:background .25s var(--ease);flex-shrink:0;
+  border:1px solid var(--border2);
+}
+.toggle.on{background:var(--neon)}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:20px;height:20px;border-radius:50%;background:#fff;
+  transition:left .25s var(--ease);
+  box-shadow:0 2px 5px rgba(0,0,0,.3);
+}
+.toggle.on::after{left:24px}
+.sg-action-btn{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:8px;padding:5px 12px;
+  font-size:.78rem;font-weight:700;color:var(--text2);cursor:pointer;
+  transition:all .2s;
+}
+.sg-action-btn:hover{background:var(--surface3);color:var(--text)}
+.sg-danger{color:var(--neon5);border-color:rgba(244,63,94,.25)}
+.sg-danger:hover{background:rgba(244,63,94,.1)}
+.settings-footer{text-align:center;font-size:.72rem;color:var(--text3);padding:8px 0}
+
+/* ─────────────────────────────────────────
+   TOAST
+───────────────────────────────────────── */
+#toasts{
+  position:fixed;top:18px;left:50%;transform:translateX(-50%);
+  z-index:9990;display:flex;flex-direction:column;align-items:center;gap:7px;
+  pointer-events:none;
+}
+.toast{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:50px;padding:8px 18px;
+  font-family:var(--font-head);font-size:.9rem;font-weight:700;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);white-space:nowrap;
+  animation:toastIn .35s var(--spring) forwards;pointer-events:auto;
+}
+.toast.ach{border-color:var(--neon3);color:var(--neon3);box-shadow:0 8px 32px rgba(245,158,11,.25)}
+.toast.ok{border-color:var(--neon4);color:var(--neon4)}
+.toast.inf{border-color:var(--neon2);color:var(--neon2)}
+.toast.err{border-color:var(--neon5);color:var(--neon5)}
+.toast.out{animation:toastOut .3s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.88)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-12px) scale(.88)}}
+
+/* ─────────────────────────────────────────
+   PWA BANNER
+───────────────────────────────────────── */
+#pwaBanner{
+  position:fixed;bottom:0;left:0;right:0;z-index:999;
+  background:var(--bg2);border-top:1px solid var(--border2);
+  padding:13px 16px;display:none;align-items:center;gap:10px;
+  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+}
+#pwaBanner.show{display:flex;animation:slideUp .4s var(--spring)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.pwa-ico{font-size:2.2rem;flex-shrink:0}
+.pwa-txt{flex:1}
+.pwa-t{font-family:var(--font-head);font-size:.95rem;font-weight:700}
+.pwa-s{font-size:.73rem;color:var(--text3);font-weight:500;margin-top:2px}
+.pwa-btn{
+  background:linear-gradient(135deg,var(--neon4),var(--neon2));
+  border:none;border-radius:50px;padding:8px 14px;
+  font-family:var(--font-head);font-size:.84rem;font-weight:700;
+  color:#000;cursor:pointer;white-space:nowrap;transition:transform .2s;
+}
+.pwa-btn:hover{transform:scale(1.05)}
+.pwa-x{background:none;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;padding:4px;flex-shrink:0}
+
+/* ─────────────────────────────────────────
+   CONFETTI
+───────────────────────────────────────── */
+.cf{
+  position:fixed;pointer-events:none;z-index:9995;
+  animation:cfFall linear forwards;
+}
+@keyframes cfFall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* ─────────────────────────────────────────
+   EMPTY STATE
+───────────────────────────────────────── */
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty-ico{font-size:2.8rem;margin-bottom:10px}
+.empty-txt{font-family:var(--font-head);font-size:1.1rem;font-weight:700}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media(max-width:360px){
+  .class-row{grid-template-columns:repeat(3,1fr)}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .dash-grid{grid-template-columns:1fr}
+  .dash-card.span2{grid-column:1}
+}
+@media(min-width:560px){
+  .options{display:grid;grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Background canvas -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- PWA Banner -->
+<div id="pwaBanner">
+  <div class="pwa-ico">📲</div>
+  <div class="pwa-txt">
+    <div class="pwa-t">Zainstaluj EduSmart</div>
+    <div class="pwa-s">Offline · Jak prawdziwa aplikacja</div>
+  </div>
+  <button class="pwa-btn" id="pwaInstallBtn">Zainstaluj</button>
+  <button class="pwa-x" id="pwaDismiss">✕</button>
+</div>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-mark">🦉</div>
+  <div class="loader-title">EduSmart</div>
+  <div class="loader-track"><div class="loader-bar"></div></div>
+  <div class="loader-hint" id="loaderHint">Ładuję materiały…</div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: PROFILES
+═════════════════════════════════════ -->
+<div class="screen" id="sProfiles">
+  <div class="brand-hero">
+    <span class="brand-owl">🦉</span>
+    <div class="brand-name">EduSmart</div>
+    <div class="brand-sub">Nauka, która napędza</div>
+  </div>
+  <div class="page-content">
+    <div class="profiles-heading">Kto się dziś uczy?</div>
+    <div class="profiles-grid" id="profilesGrid"></div>
+    <div style="font-size:.72rem;color:var(--text3);font-weight:500;text-align:center;margin-top:4px">
+      Przytrzymaj kartę, aby usunąć profil
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: HOME
+═════════════════════════════════════ -->
+<div class="screen" id="sHome">
+  <div class="home-header">
+    <div class="profile-pill" id="homePill" onclick="goto('sProfiles')">
+      <div class="pill-avatar" id="homeAv">🦉</div>
+      <div class="pill-name" id="homeName">Uczeń</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="icon-btn" onclick="goto('sDashboard')" title="Postępy">📊</div>
+      <div class="icon-btn" onclick="goto('sSettings')" title="Ustawienia">⚙️</div>
+    </div>
+  </div>
+  <div class="page-content">
+    <!-- Hero -->
+    <div class="hero-banner" style="width:100%">
+      <div class="hero-greeting">Dzień dobry,</div>
+      <div class="hero-name" id="heroName">Uczniu!</div>
+      <div class="hero-sub" id="heroSub">Gotowy na dzisiejsze wyzwanie?</div>
+      <div class="hero-row">
+        <div class="hero-stat">
+          <div class="hero-stat-num" id="hTests">0</div>
+          <div class="hero-stat-lbl">Testów</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num" id="hBadges">0</div>
+          <div class="hero-stat-lbl">Odznak</div>
+        </div>
+        <div class="hero-level">
+          <div class="level-badge">💎 LVL <span id="hLevel">1</span></div>
+          <div class="xp-mini-bar">
+            <div class="xp-mini-fill" id="hXpFill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Streak -->
+    <div class="streak-card" style="width:100%">
+      <div class="streak-left">
+        <div class="streak-fire">🔥</div>
+        <div>
+          <div class="streak-num" id="streakNum">0</div>
+          <div class="streak-lbl">dni z rzędu</div>
+        </div>
+      </div>
+      <div class="streak-dots" id="streakDots"></div>
+    </div>
+
+    <!-- Daily challenge -->
+    <div class="daily-card" id="dailyCard" onclick="startDaily()" style="width:100%">
+      <div class="daily-icon">🎯</div>
+      <div class="daily-info">
+        <div class="daily-title">Wyzwanie Dnia</div>
+        <div class="daily-sub" id="dailySub">5 pytań · 5 przedmiotów</div>
+      </div>
+      <div class="daily-chip" id="dailyChip">+50 XP</div>
+    </div>
+
+    <!-- Classes -->
+    <div class="sec-head" style="width:100%">
+      <div class="sec-title">Wybierz klasę</div>
+    </div>
+    <div class="class-row" style="width:100%">
+      <div class="class-card" onclick="selectClass(4)" style="--cc:var(--neon)">
+        <div class="cc-num" style="color:var(--neon)">4</div>
+        <div class="cc-lbl">Klasa</div>
+        <div class="cc-prog"><div class="cc-prog-fill" id="pc4" style="width:0%;background:var(--neon)"></div></div>
+      </div>
+      <div class="class-card" onclick="selectClass(5)" style="--cc:var(--neon2)">
+        <div class="cc-num" style="color:var(--neon2)">5</div>
+        <div class="cc-lbl">Klasa</div>
+        <div class="cc-prog"><div class="cc-prog-fill" id="pc5" style="width:0%;background:var(--neon2)"></div></div>
+      </div>
+      <div class="class-card" onclick="selectClass(6)" style="--cc:var(--neon5)">
+        <div class="cc-num" style="color:var(--neon5)">6</div>
+        <div class="cc-lbl">Klasa</div>
+        <div class="cc-prog"><div class="cc-prog-fill" id="pc6" style="width:0%;background:var(--neon5)"></div></div>
+      </div>
+    </div>
+
+    <!-- Quick access -->
+    <div class="sec-head" style="width:100%">
+      <div class="sec-title">Szybki dostęp</div>
+    </div>
+    <div class="quick-grid" style="width:100%">
+      <div class="quick-card" onclick="goto('sFlashcards')">
+        <span class="q-ico">🃏</span>
+        <div class="q-title">Fiszki</div>
+        <div class="q-sub">Angielski · SRS</div>
+      </div>
+      <div class="quick-card" onclick="goto('sDashboard')">
+        <span class="q-ico">🏆</span>
+        <div class="q-title">Moje wyniki</div>
+        <div class="q-sub">Postępy i odznaki</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip" style="width:100%">
+      <div class="stat-chip">
+        <div class="sc-num" id="stTests">0</div>
+        <div class="sc-lbl">🎯 Testów</div>
+      </div>
+      <div class="stat-chip">
+        <div class="sc-num" id="stXP">0</div>
+        <div class="sc-lbl">⭐ XP</div>
+      </div>
+      <div class="stat-chip">
+        <div class="sc-num" id="stBadges">0</div>
+        <div class="sc-lbl">🏅 Odznak</div>
+      </div>
+      <div class="stat-chip">
+        <div class="sc-num" id="stStreak">0</div>
+        <div class="sc-lbl">🔥 Seria</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: SUBJECTS
+═════════════════════════════════════ -->
+<div class="screen" id="sSubjects">
+  <div class="topbar">
+    <button class="back-btn" onclick="goto('sHome')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Wróć
+    </button>
+    <div class="topbar-title" id="subjTitle">Klasa 4</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="page-content">
+    <div class="subject-grid" style="width:100%" id="subjGrid">
+      <div class="subj-card" data-s="math" onclick="selectSubject('math')" style="--sc:var(--math)">
+        <span class="s-ico">🔢</span>
+        <div class="s-name">Matematyka</div>
+        <div class="s-desc">Liczby i zadania</div>
+        <div class="s-prog"><div class="s-prog-fill" id="sp-math" style="width:0%;background:var(--math)"></div></div>
+      </div>
+      <div class="subj-card" data-s="polish" onclick="selectSubject('polish')" style="--sc:var(--polish)">
+        <span class="s-ico">📖</span>
+        <div class="s-name">Język Polski</div>
+        <div class="s-desc">Gramatyka i lektury</div>
+        <div class="s-prog"><div class="s-prog-fill" id="sp-polish" style="width:0%;background:var(--polish)"></div></div>
+      </div>
+      <div class="subj-card" data-s="english" onclick="selectSubject('english')" style="--sc:var(--english)">
+        <span class="s-ico">🌍</span>
+        <div class="s-name">Angielski</div>
+        <div class="s-desc">English language</div>
+        <div class="s-prog"><div class="s-prog-fill" id="sp-english" style="width:0%;background:var(--english)"></div></div>
+      </div>
+      <div class="subj-card" data-s="nature" onclick="selectSubject('nature')" style="--sc:var(--nature)">
+        <span class="s-ico">🌿</span>
+        <div class="s-name">Przyroda</div>
+        <div class="s-desc">Natura i środowisko</div>
+        <div class="s-prog"><div class="s-prog-fill" id="sp-nature" style="width:0%;background:var(--nature)"></div></div>
+      </div>
+      <div class="subj-card" data-s="history" onclick="selectSubject('history')" style="--sc:var(--history)">
+        <span class="s-ico">🏰</span>
+        <div class="s-name">Historia</div>
+        <div class="s-desc">Dawne czasy</div>
+        <div class="s-prog"><div class="s-prog-fill" id="sp-history" style="width:0%;background:var(--history)"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: CHAPTERS
+═════════════════════════════════════ -->
+<div class="screen" id="sChapters">
+  <div class="topbar">
+    <button class="back-btn" onclick="goto('sSubjects')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Wróć
+    </button>
+    <div class="topbar-title" id="chapTitle">Matematyka</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="page-content">
+    <div class="chapter-list" id="chapList" style="width:100%"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: QUIZ
+═════════════════════════════════════ -->
+<div class="screen" id="sQuiz">
+  <div class="quiz-topbar">
+    <div class="quiz-subj-pill" id="qzPill">🔢 Quiz</div>
+    <div class="quiz-streak-pill" id="qzStreakPill">🔥 0</div>
+    <div class="quiz-score-pill">⭐ <span id="qzScore">0</span></div>
+  </div>
+  <div class="quiz-prog-wrap" style="width:100%;max-width:600px">
+    <div class="quiz-prog-track">
+      <div class="quiz-prog-fill" id="qzProgFill" style="width:0%"></div>
+    </div>
+    <div class="quiz-prog-label">
+      <span id="qzProgLabel">Pytanie 1 z 10</span>
+      <span id="qzPct">0%</span>
+    </div>
+  </div>
+  <div id="dailyQzBanner" style="display:none;width:100%;max-width:600px;margin-bottom:8px">
+    <div class="daily-card done" style="cursor:default">
+      <div class="daily-icon">🎯</div>
+      <div class="daily-info">
+        <div class="daily-title">Wyzwanie Dnia</div>
+        <div class="daily-sub">5 pytań z różnych przedmiotów</div>
+      </div>
+      <div class="daily-chip">+50 XP</div>
+    </div>
+  </div>
+  <div class="question-card" id="qzCard" style="width:100%;max-width:600px">
+    <div class="qcard-glow"></div>
+    <div class="q-top-row">
+      <div class="q-num" id="qzNum">Q1</div>
+      <div class="q-text" id="qzText">Ładowanie pytania…</div>
+      <div class="tts-btn" id="ttsBtn" onclick="speakQ()">🔊</div>
+    </div>
+    <div id="qzOptions"></div>
+    <div class="feedback" id="qzFeedback" style="display:none"></div>
+  </div>
+  <div class="timer-outer" id="timerWrap" style="display:none">
+    <svg class="timer-svg" width="56" height="56" viewBox="0 0 56 56">
+      <circle class="t-track" cx="28" cy="28" r="23"/>
+      <circle class="t-arc" id="timerArc" cx="28" cy="28" r="23" stroke-dasharray="144" stroke-dashoffset="0"/>
+      <text class="t-text" id="timerTxt" x="28" y="32" text-anchor="middle" transform="rotate(90,28,28)">30</text>
+    </svg>
+  </div>
+  <button class="next-btn" id="nextBtn" onclick="nextQ()">Następne →</button>
+  <div class="quiz-xp-row" style="width:100%;max-width:600px">
+    <div class="xp-lbl">LVL<span id="qzLvl" style="margin-left:4px">1</span></div>
+    <div class="xp-track"><div class="xp-fill" id="qzXpFill" style="width:30%"></div></div>
+    <div class="xp-lbl"><span id="qzXpVal">30</span> XP</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: RESULTS
+═════════════════════════════════════ -->
+<div class="screen" id="sResults">
+  <div class="results-wrap">
+    <div class="res-hero">
+      <div class="res-hero-glow"></div>
+      <span class="res-emoji" id="resEmoji">🏆</span>
+      <div class="res-title" id="resTitle">Świetnie!</div>
+      <div class="res-chap" id="resChap"></div>
+      <div class="score-ring">
+        <svg class="sr-svg" width="130" height="130" viewBox="0 0 130 130">
+          <circle class="sr-track" cx="65" cy="65" r="56"/>
+          <circle class="sr-fill" id="srArc" cx="65" cy="65" r="56" stroke-dasharray="352" stroke-dashoffset="352"/>
+        </svg>
+        <div class="sr-text">
+          <div class="sr-pts"><span id="resPts">0</span></div>
+          <div class="sr-of">z <span id="resTot">10</span> pkt</div>
+        </div>
+      </div>
+      <div class="res-stats">
+        <div class="rs-item"><div class="rs-num c" id="resCor">0</div><div class="rs-lbl">✅ Poprawne</div></div>
+        <div class="rs-item"><div class="rs-num w" id="resWrg">0</div><div class="rs-lbl">❌ Błędy</div></div>
+        <div class="rs-item"><div class="rs-num t" id="resTime">0s</div><div class="rs-lbl">⏱️ Czas</div></div>
+      </div>
+    </div>
+    <div class="xp-earned-card">
+      <div class="xe-title">⚡ Zdobyte XP</div>
+      <div class="xe-row">
+        <div class="xe-bar"><div class="xe-fill" id="xeFill" style="width:0%"></div></div>
+        <div class="xe-text" id="xeText">+0 XP</div>
+      </div>
+      <div class="xe-sub">Poziom <span id="xeLvl">1</span> · <span id="xeToNext">100</span> XP do następnego</div>
+    </div>
+    <div class="badges-card" id="resBadgesCard">
+      <div class="bc-title">🏅 Odznaki</div>
+      <div class="badges-row" id="resBadgesRow"></div>
+    </div>
+    <div class="res-btns">
+      <button class="rb primary" onclick="retryQuiz()">🔄 Spróbuj jeszcze raz</button>
+      <button class="rb secondary" onclick="goto('sChapters')">📚 Inne rozdziały</button>
+      <button class="rb secondary" onclick="goto('sDashboard')">📊 Moje wyniki</button>
+      <button class="rb secondary" onclick="goto('sHome')">🏠 Strona główna</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: DASHBOARD
+═════════════════════════════════════ -->
+<div class="screen" id="sDashboard">
+  <div class="topbar">
+    <button class="back-btn" onclick="goto('sHome')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Wróć
+    </button>
+    <div class="topbar-title">Moje postępy</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="page-content">
+    <div class="dash-grid" id="dashGrid" style="width:100%"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: FLASHCARDS
+═════════════════════════════════════ -->
+<div class="screen" id="sFlashcards">
+  <div class="topbar">
+    <button class="back-btn" onclick="goto('sHome')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Wróć
+    </button>
+    <div class="topbar-title">🃏 Fiszki</div>
+    <div class="icon-btn" onclick="shuffleFC()" title="Przetasuj">🔀</div>
+  </div>
+  <div class="page-content">
+    <div class="fc-wrap" onclick="flipFC()">
+      <div class="flashcard" id="flashcard">
+        <div class="fc-side">
+          <div class="fc-lang">🇬🇧 ANGIELSKI</div>
+          <div class="fc-word" id="fcEn">hello</div>
+          <div class="fc-hint">Kliknij, aby zobaczyć tłumaczenie</div>
+        </div>
+        <div class="fc-side fc-back">
+          <div class="fc-lang">🇵🇱 POLSKI</div>
+          <div class="fc-word" id="fcPl">cześć</div>
+          <div class="fc-cat" id="fcCat">Pozdrowienia</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-controls" style="width:100%;max-width:480px">
+      <button class="fc-no" onclick="fcAns(false)">✕ Nie znam</button>
+      <button class="fc-yes" onclick="fcAns(true)">✓ Znam!</button>
+    </div>
+    <div class="fc-prog-row">
+      <div class="fc-prog-track"><div class="fc-prog-fill" id="fcFill" style="width:0%"></div></div>
+      <div class="fc-count" id="fcCount">0/0</div>
+    </div>
+    <div class="fc-stats-row">
+      <div class="fcs"><span class="k" id="fcKnown">0</span>Znam 👍</div>
+      <div class="fcs"><span class="u" id="fcUnknown">0</span>Nie znam 👎</div>
+      <div class="fcs"><span class="r" id="fcLeft">0</span>Zostało</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: SETTINGS
+═════════════════════════════════════ -->
+<div class="screen" id="sSettings">
+  <div class="topbar">
+    <button class="back-btn" onclick="goto('sHome')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Wróć
+    </button>
+    <div class="topbar-title">Ustawienia</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="settings-list">
+    <div class="sg-section">Wygląd</div>
+    <div class="sg-row">
+      <div class="sg-ico">🌗</div>
+      <div class="sg-info"><div class="sg-lbl">Tryb jasny</div><div class="sg-sub">Zmień motyw aplikacji</div></div>
+      <div class="toggle" id="toggleTheme" onclick="toggleSet('theme')"></div>
+    </div>
+    <div class="sg-section">Dźwięk</div>
+    <div class="sg-row">
+      <div class="sg-ico">🎵</div>
+      <div class="sg-info"><div class="sg-lbl">Efekty dźwiękowe</div><div class="sg-sub">Dźwięki przy odpowiedziach</div></div>
+      <div class="toggle on" id="toggleSound" onclick="toggleSet('sound')"></div>
+    </div>
+    <div class="sg-row">
+      <div class="sg-ico">🗣️</div>
+      <div class="sg-info"><div class="sg-lbl">Czytanie pytań</div><div class="sg-sub">Text-to-Speech</div></div>
+      <div class="toggle on" id="toggleTts" onclick="toggleSet('tts')"></div>
+    </div>
+    <div class="sg-section">Quiz</div>
+    <div class="sg-row">
+      <div class="sg-ico">⏱️</div>
+      <div class="sg-info"><div class="sg-lbl">Licznik czasu</div><div class="sg-sub">30 sekund na pytanie</div></div>
+      <div class="toggle" id="toggleTimer" onclick="toggleSet('timer')"></div>
+    </div>
+    <div class="sg-row">
+      <div class="sg-ico">🔀</div>
+      <div class="sg-info"><div class="sg-lbl">Losowa kolejność</div><div class="sg-sub">Tasuj pytania i odpowiedzi</div></div>
+      <div class="toggle on" id="toggleShuffle" onclick="toggleSet('shuffle')"></div>
+    </div>
+    <div class="sg-section">Aplikacja</div>
+    <div class="sg-row">
+      <div class="sg-ico">📲</div>
+      <div class="sg-info"><div class="sg-lbl">Zainstaluj aplikację</div><div class="sg-sub">Dodaj do ekranu głównego</div></div>
+      <button class="sg-action-btn" onclick="showInstall()">Jak?</button>
+    </div>
+    <div class="sg-row">
+      <div class="sg-ico">🗑️</div>
+      <div class="sg-info"><div class="sg-lbl">Resetuj dane</div><div class="sg-sub">Usuwa wszystkie wyniki</div></div>
+      <button class="sg-action-btn sg-danger" onclick="resetAll()">Reset</button>
+    </div>
+    <div class="settings-footer">EduSmart v3.0 · Made with 🦉 & ❤️</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════
+//  ANIMATED BACKGROUND CANVAS
+// ═══════════════════════════════════════════════════
+(function(){
+  const c=document.getElementById('bgCanvas');
+  const ctx=c.getContext('2d');
+  let W,H,pts=[];
+  function resize(){
+    W=c.width=window.innerWidth;
+    H=c.height=window.innerHeight;
+  }
+  function init(){
+    pts=[];
+    for(let i=0;i<6;i++) pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:80+Math.random()*120,col:['124,58,237','6,182,212','245,158,11','16,185,129','244,63,94'][i%5]});
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+      g.addColorStop(0,`rgba(${p.col},.18)`);
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<-p.r||p.x>W+p.r) p.vx*=-1;
+      if(p.y<-p.r||p.y>H+p.r) p.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',()=>{resize();init()});
+  resize();init();draw();
+})();
+
+// ═══════════════════════════════════════════════════
+//  QUESTION DATABASE
+// ═══════════════════════════════════════════════════
+const DB = {
+4:{
+  math:{name:'Matematyka',icon:'🔢',color:'var(--math)',chapters:[
+    {name:'Dodawanie i odejmowanie',icon:'➕',questions:[
+      {t:'c',q:'Ile to 345 + 256?',o:['601','591','611','596'],a:'601'},
+      {t:'c',q:'Ile to 800 – 357?',o:['443','453','447','463'],a:'443'},
+      {t:'i',q:'Oblicz: 1000 – 567 = ?',a:'433'},
+      {t:'c',q:'Ile to 729 + 183?',o:['912','902','922','932'],a:'912'},
+      {t:'i',q:'Ile to 650 + 350?',a:'1000'},
+      {t:'c',q:'Janek miał 450 zł, wydał 178 zł. Ile zostało?',o:['272','282','262','252'],a:'272'},
+      {t:'c',q:'Ile to 999 + 1?',o:['1000','1001','999','998'],a:'1000'},
+      {t:'i',q:'Oblicz: 2017 – 1993 = ?',a:'24'},
+      {t:'c',q:'Suma liczb 456 i 544 wynosi…',o:['1000','900','1100','1050'],a:'1000'},
+      {t:'i',q:'Ile to 375 + 625?',a:'1000'},
+    ]},
+    {name:'Mnożenie i dzielenie',icon:'✖️',questions:[
+      {t:'c',q:'Ile to 6 × 7?',o:['42','36','48','54'],a:'42'},
+      {t:'i',q:'Ile to 8 × 9?',a:'72'},
+      {t:'c',q:'Ile to 56 ÷ 7?',o:['8','7','9','6'],a:'8'},
+      {t:'c',q:'Ile to 12 × 4?',o:['48','42','52','44'],a:'48'},
+      {t:'i',q:'Ile to 81 ÷ 9?',a:'9'},
+      {t:'c',q:'Ile to 7 × 8?',o:['56','54','64','48'],a:'56'},
+      {t:'c',q:'9 rzędów × 4 osoby = ? osób',o:['36','34','32','38'],a:'36'},
+      {t:'i',q:'Ile to 144 ÷ 12?',a:'12'},
+      {t:'c',q:'Ile to 11 × 11?',o:['121','111','122','131'],a:'121'},
+      {t:'i',q:'Ile to 7 × 7?',a:'49'},
+    ]},
+    {name:'Ułamki – pierwsze kroki',icon:'🍕',questions:[
+      {t:'c',q:'Jak czytamy ułamek 1/2?',o:['jedna druga','jeden dwa','pół dwa','dwa pierwsze'],a:'jedna druga'},
+      {t:'c',q:'Ile to 1/2 + 1/2?',o:['1','2','1/4','3/4'],a:'1'},
+      {t:'c',q:'Który ułamek jest największy?',o:['3/4','1/4','2/4','1/2'],a:'3/4'},
+      {t:'c',q:'Ile to 1/4 + 2/4?',o:['3/4','1/2','1','2/8'],a:'3/4'},
+      {t:'i',q:'1 cała i pół jako liczba dziesiętna to? (użyj przecinka)',a:'1,5'},
+      {t:'c',q:'Który ułamek równa się 1/2?',o:['2/4','2/3','1/3','3/5'],a:'2/4'},
+      {t:'c',q:'Ile to 3/4 – 1/4?',o:['2/4','1/4','3/8','1'],a:'2/4'},
+      {t:'c',q:'Co to jest licznik ułamka?',o:['Górna część','Dolna część','Cała liczba','Wynik dzielenia'],a:'Górna część'},
+      {t:'c',q:'Co to jest mianownik ułamka?',o:['Dolna część','Górna część','Reszta z dzielenia','Suma ułamka'],a:'Dolna część'},
+      {t:'i',q:'Ile to 5/5? (liczba całkowita)',a:'1'},
+    ]},
+    {name:'Figury geometryczne',icon:'📐',questions:[
+      {t:'c',q:'Ile boków ma kwadrat?',o:['4','3','5','6'],a:'4'},
+      {t:'c',q:'Obwód kwadratu o boku 5 cm = ?',o:['20 cm','15 cm','25 cm','10 cm'],a:'20 cm'},
+      {t:'i',q:'Pole prostokąta 4 × 3 cm = ? cm²',a:'12'},
+      {t:'c',q:'Ile kątów ma trójkąt?',o:['3','4','5','2'],a:'3'},
+      {t:'c',q:'Figura o 6 bokach to…',o:['Sześciokąt','Pięciokąt','Ośmiokąt','Czworokąt'],a:'Sześciokąt'},
+      {t:'i',q:'Obwód prostokąta 6 cm × 4 cm = ? cm',a:'20'},
+      {t:'c',q:'Koło to figura bez…',o:['Kątów','Boków','Środka','Promienia'],a:'Kątów'},
+      {t:'c',q:'Ile osi symetrii ma kwadrat?',o:['4','2','1','8'],a:'4'},
+      {t:'i',q:'Pole kwadratu o boku 6 cm = ? cm²',a:'36'},
+      {t:'c',q:'Przekątna kwadratu dzieli go na…',o:['2 trójkąty','2 prostokąty','4 kwadraty','3 figury'],a:'2 trójkąty'},
+    ]},
+  ]},
+  polish:{name:'Język Polski',icon:'📖',color:'var(--polish)',chapters:[
+    {name:'Części mowy',icon:'🔤',questions:[
+      {t:'c',q:'Część mowy oznaczająca czynność to…',o:['Czasownik','Rzeczownik','Przymiotnik','Przysłówek'],a:'Czasownik'},
+      {t:'c',q:'"Piękny" to przykład…',o:['Przymiotnika','Rzeczownika','Czasownika','Liczebnika'],a:'Przymiotnika'},
+      {t:'c',q:'Ile rodzajów gramatycznych w języku polskim?',o:['3','2','4','5'],a:'3'},
+      {t:'c',q:'"Bardzo" to przykład…',o:['Przysłówka','Przymiotnika','Czasownika','Spójnika'],a:'Przysłówka'},
+      {t:'i',q:'Słowo zastępujące rzeczownik to Za____nik',a:'Zaimek'},
+      {t:'c',q:'Które słowo to przymiotnik?',o:['wysoki','chodzić','szybko','trzy'],a:'wysoki'},
+      {t:'c',q:'"Trzy" to przykład…',o:['Liczebnika','Przymiotnika','Przysłówka','Rzeczownika'],a:'Liczebnika'},
+      {t:'c',q:'Spójnik służy do…',o:['Łączenia zdań/wyrazów','Opisywania czynności','Nazywania rzeczy','Określania miejsca'],a:'Łączenia zdań/wyrazów'},
+      {t:'i',q:'Jak nazywamy nieodmienną część mowy wyrażającą czynność? (bezokoliCZNIK)',a:'bezokolicznik'},
+      {t:'c',q:'Rzeczownik odpowiada na pytania…',o:['Kto? Co?','Co robi?','Jaki?','Ile?'],a:'Kto? Co?'},
+    ]},
+    {name:'Zdania i interpunkcja',icon:'✏️',questions:[
+      {t:'c',q:'Czym kończymy zdanie oznajmujące?',o:['Kropką','Wykrzyknikiem','Pytajnikiem','Przecinkiem'],a:'Kropką'},
+      {t:'c',q:'Jakim znakiem kończymy pytanie?',o:['?','!','.','...'],a:'?'},
+      {t:'i',q:'Ile zdań: "Ala ma kota. Kot jest rudy."',a:'2'},
+      {t:'c',q:'"Chodź tu!" to zdanie…',o:['Rozkazujące','Pytające','Oznajmujące','Wykrzyknikowe'],a:'Rozkazujące'},
+      {t:'c',q:'Podmiot w zdaniu odpowiada na pytanie…',o:['Kto? Co?','Co robi?','Jaki?','Gdzie?'],a:'Kto? Co?'},
+      {t:'c',q:'Czym oddzielamy wyrazy w wyliczeniu?',o:['Przecinkiem','Kropką','Dwukropkiem','Myślnikiem'],a:'Przecinkiem'},
+      {t:'c',q:'Orzeczenie odpowiada na pytanie…',o:['Co robi? Co się dzieje?','Kto?','Jaki?','Gdzie?'],a:'Co robi? Co się dzieje?'},
+      {t:'c',q:'Wielką literą piszemy…',o:['Nazwy własne','Wszystkie rzeczowniki','Przymiotniki','Czasowniki'],a:'Nazwy własne'},
+      {t:'c',q:'Zdanie złożone składa się z…',o:['Co najmniej 2 zdań składowych','1 zdania','3 podmiotów','2 orzeczeń'],a:'Co najmniej 2 zdań składowych'},
+      {t:'i',q:'Znak "..." na końcu zdania to trzy _____ (wielokropek)',a:'kropki'},
+    ]},
+    {name:'Ortografia polska',icon:'📝',questions:[
+      {t:'c',q:'Jak piszemy słowo "król"?',o:['król (ó)','krul (u)','krol','kruul'],a:'król (ó)'},
+      {t:'c',q:'"h" czy "ch" — "_oryzont"?',o:['Horyzont (h)','Choryzont (ch)','Huryzont','Koryzont'],a:'Horyzont (h)'},
+      {t:'c',q:'Nazwy krajów pisze się…',o:['Dużą literą','Małą literą','Bez reguł','Zależy'],a:'Dużą literą'},
+      {t:'c',q:'"nie" z rzeczownikami piszemy…',o:['Razem','Osobno','Zależy','Z łącznikiem'],a:'Razem'},
+      {t:'c',q:'W słowie "rzeka" jest…',o:['rz','ż','sz','cz'],a:'rz'},
+      {t:'c',q:'"ż" piszemy gdy wymienia się na…',o:['g lub z','r','sz','cz'],a:'g lub z'},
+      {t:'i',q:'"rz" czy "sz" — stolica Polski: "War__awa"',a:'Warszawa'},
+      {t:'c',q:'Nazwy miesięcy piszemy…',o:['Małą literą','Dużą literą','Dowolnie','Zależy od zdania'],a:'Małą literą'},
+      {t:'c',q:'Słowo "przyjaciel" piszemy przez…',o:['rz','sz','ż','cz'],a:'rz'},
+      {t:'i',q:'"ó" czy "u" — wzór? Wpisz całe słowo',a:'wzór'},
+    ]},
+    {name:'Czasownik – odmiana',icon:'⏱️',questions:[
+      {t:'c',q:'Bezokoliczniki to formy gdzie…',o:['Nie można określić osoby','Można określić osobę','Można określić liczbę','Można określić czas'],a:'Nie można określić osoby'},
+      {t:'c',q:'Zakończenia bezokoliczników to…',o:['-ść, -źć, -c','-ę, -ą, -emy','-łem, -łam','-sz, -my'],a:'-ść, -źć, -c'},
+      {t:'c',q:'Które zdanie zawiera bezokolicznik?',o:['Trzeba czytać lektury.','Zwykle zasypiam późno.','Lubię niespodzianki.','Piszę list.'],a:'Trzeba czytać lektury.'},
+      {t:'c',q:'Forma "uczyłem" to…',o:['1. os. l. poj.','2. os. l. poj.','1. os. l. mn.','3. os. l. poj.'],a:'1. os. l. poj.'},
+      {t:'c',q:'"zamieniła" — liczba i rodzaj?',o:['Poj., żeński','Mn., żeński','Poj., nijaki','Mn., nijaki'],a:'Poj., żeński'},
+      {t:'c',q:'"Przyniosłeś mi książkę?" — czas i osoba?',o:['2. os. l. poj. czasu przeszłego','1. os. l. poj. teraźn.','2. os. l. mn. przyszłego','3. os. l. poj. przeszłego'],a:'2. os. l. poj. czasu przeszłego'},
+      {t:'c',q:'Czasownik w 3. os. l. mn. r. niemęskoosobowego:',o:['tańczyły','strzelali','wyjechali','staliśmy'],a:'tańczyły'},
+      {t:'c',q:'Oceń zdanie: "Czasownik odmienia się przez osoby, liczby, czasy, rodzaje."',o:['Prawda','Fałsz','Tylko przez czasy','Tylko przez osoby'],a:'Prawda'},
+      {t:'c',q:'Wykonawca w 3. os. l. mn. w zdaniu:',o:['Wyszli wcześniej.','Nie odkładaj tego.','Wybieramy się.','Pojechałam sama.'],a:'Wyszli wcześniej.'},
+      {t:'i',q:'Podaj bezokolicznik od "biegam"',a:'biec'},
+    ]},
+  ]},
+  english:{name:'Angielski',icon:'🌍',color:'var(--english)',chapters:[
+    {name:'Kolory i liczby',icon:'🎨',questions:[
+      {t:'c',q:'Co znaczy "red"?',o:['Czerwony','Niebieski','Zielony','Żółty'],a:'Czerwony'},
+      {t:'i',q:'Przetłumacz: "pięć"',a:'five'},
+      {t:'c',q:'Ile to "twelve"?',o:['12','20','11','13'],a:'12'},
+      {t:'c',q:'Po angielsku "żółty" to…',o:['yellow','green','blue','orange'],a:'yellow'},
+      {t:'i',q:'Wpisz po angielsku: niebieski',a:'blue'},
+      {t:'c',q:'Co znaczy "twenty"?',o:['20','12','2','200'],a:'20'},
+      {t:'i',q:'Po angielsku "sto" to…',a:'hundred'},
+      {t:'c',q:'Co znaczy "purple"?',o:['Fioletowy','Różowy','Brązowy','Szary'],a:'Fioletowy'},
+      {t:'i',q:'Przetłumacz: "trzynaście"',a:'thirteen'},
+      {t:'c',q:'Co znaczy "black"?',o:['Czarny','Biały','Szary','Ciemny'],a:'Czarny'},
+    ]},
+    {name:'Zwierzęta (Animals)',icon:'🐾',questions:[
+      {t:'c',q:'Co znaczy "dog"?',o:['Pies','Kot','Ptak','Ryba'],a:'Pies'},
+      {t:'i',q:'Przetłumacz: "kot"',a:'cat'},
+      {t:'c',q:'Po angielsku "koń" to…',o:['horse','cow','pig','sheep'],a:'horse'},
+      {t:'c',q:'Co znaczy "bird"?',o:['Ptak','Niedźwiedź','Jeż','Owca'],a:'Ptak'},
+      {t:'i',q:'Wpisz po angielsku: słoń',a:'elephant'},
+      {t:'c',q:'Co znaczy "fish"?',o:['Ryba','Żaba','Wąż','Krab'],a:'Ryba'},
+      {t:'c',q:'Po angielsku "królik" to…',o:['rabbit','dog','mouse','rat'],a:'rabbit'},
+      {t:'i',q:'Przetłumacz: "żyrafa"',a:'giraffe'},
+      {t:'c',q:'Co znaczy "bear"?',o:['Niedźwiedź','Wilk','Lis','Jeleń'],a:'Niedźwiedź'},
+      {t:'i',q:'Po angielsku "tygrys" to…',a:'tiger'},
+    ]},
+    {name:'Rodzina i dom',icon:'👨‍👩‍👧',questions:[
+      {t:'c',q:'Co znaczy "mother"?',o:['Mama','Tata','Siostra','Brat'],a:'Mama'},
+      {t:'i',q:'Przetłumacz: "ojciec"',a:'father'},
+      {t:'c',q:'Po angielsku "siostra" to…',o:['sister','brother','aunt','uncle'],a:'sister'},
+      {t:'c',q:'Co znaczy "grandma"?',o:['Babcia','Dziadek','Ciocia','Wujek'],a:'Babcia'},
+      {t:'i',q:'Wpisz po angielsku: brat',a:'brother'},
+      {t:'c',q:'Po angielsku "dom" to…',o:['house','school','park','shop'],a:'house'},
+      {t:'c',q:'Co znaczy "kitchen"?',o:['Kuchnia','Sypialnia','Łazienka','Salon'],a:'Kuchnia'},
+      {t:'i',q:'Przetłumacz: "dziadek"',a:'grandfather'},
+      {t:'c',q:'Co znaczy "bedroom"?',o:['Sypialnia','Kuchnia','Łazienka','Salon'],a:'Sypialnia'},
+      {t:'i',q:'Po angielsku "ciocia" to…',a:'aunt'},
+    ]},
+    {name:'Present Simple',icon:'⏰',questions:[
+      {t:'c',q:'Uzupełnij: "She ___ a cat." (mieć)',o:['has','have','is','are'],a:'has'},
+      {t:'c',q:'Uzupełnij: "I ___ to school." (chodzić)',o:['go','goes','am going','is going'],a:'go'},
+      {t:'i',q:'Przetłumacz: "Lubię pizzę." (I...pizza)',a:'I like pizza'},
+      {t:'c',q:'Gdzie dodajemy "s" w Present Simple?',o:['He/She/It','I/You','We/They','Wszędzie'],a:'He/She/It'},
+      {t:'c',q:'Jak zapytać: "Czy lubisz koty?"',o:['Do you like cats?','Are you like cats?','You like cats?','Does you like cats?'],a:'Do you like cats?'},
+      {t:'i',q:'Uzupełnij: "He ___ football." (grać)',a:'plays'},
+      {t:'c',q:'Przeczenie Present Simple to…',o:["don't/doesn't",'am not','not','no'],a:"don't/doesn't"},
+      {t:'i',q:'Przetłumacz: "Ona czyta książkę."',a:'She reads a book'},
+      {t:'c',q:'Uzupełnij: "They ___ English." (uczyć się)',o:['learn','learns','is learning','be learning'],a:'learn'},
+      {t:'i',q:'Uzupełnij: "My cat ___ fish." (jeść — 3os)',a:'eats'},
+    ]},
+  ]},
+  nature:{name:'Przyroda',icon:'🌿',color:'var(--nature)',chapters:[
+    {name:'Plany i mapy (Dział 6)',icon:'🗺️',questions:[
+      {t:'c',q:'Plan to obraz widzianego z góry…',o:['Niewielkiego obszaru','Całej Ziemi','Dowolnego obszaru','Tylko budynków'],a:'Niewielkiego obszaru'},
+      {t:'c',q:'Najważniejsze elementy map to…',o:['Tytuł, skala, legenda','Tytuł, autor, data','Skala, zdjęcia, opis','Legenda, kolory, ramka'],a:'Tytuł, skala, legenda'},
+      {t:'c',q:'Skala 1:50 — 1 cm na planie = w rzeczywistości…',o:['50 cm','5 cm','500 cm','1 cm'],a:'50 cm'},
+      {t:'c',q:'Bez strzałki — północ na mapie jest…',o:['U góry','U dołu','Po lewej','Po prawej'],a:'U góry'},
+      {t:'c',q:'Na mapie bez strzałki — wschód jest…',o:['Po prawej','Po lewej','U góry','U dołu'],a:'Po prawej'},
+      {t:'c',q:'Znaki kartograficzne wyjaśnione są w…',o:['Legendzie mapy','Tytule','Skali','Ramce'],a:'Legendzie mapy'},
+      {t:'c',q:'Do orientowania mapy używamy…',o:['Kompasu lub obiektów w okolicy','Tylko termometru','Wyłącznie GPS','Linijki'],a:'Kompasu lub obiektów w okolicy'},
+      {t:'c',q:'Mapa to obraz…',o:['Dużego obszaru lub całej Ziemi','Tylko jednego budynku','Placu zabaw','Sali lekcyjnej'],a:'Dużego obszaru lub całej Ziemi'},
+      {t:'i',q:'Jak nazywamy liczbę przez którą dzielimy wymiary przy rysowaniu planu?',a:'skala'},
+      {t:'c',q:'Skala liczbowa 1:100 000 — 1 cm na mapie = ?',o:['1 km','10 km','100 m','10 m'],a:'1 km'},
+    ]},
+    {name:'Krajobraz i skały (Dział 7)',icon:'🏔️',questions:[
+      {t:'c',q:'Które z wymienionych NIE jest składnikiem krajobrazu?',o:['Klimat kontynentalny','Ukształtowanie terenu','Skały','Szata roślinna'],a:'Klimat kontynentalny'},
+      {t:'c',q:'Doliny i kotliny to formy terenu…',o:['Wklęsłe','Wypukłe','Równinne','Płaskie'],a:'Wklęsłe'},
+      {t:'c',q:'Pagórki, wzgórza i góry to formy terenu…',o:['Wypukłe','Wklęsłe','Równinne','Podmorskie'],a:'Wypukłe'},
+      {t:'c',q:'Granit, wapień i piaskowiec to skały…',o:['Lite','Zwięzłe','Luźne','Organiczne'],a:'Lite'},
+      {t:'c',q:'Piasek i żwir to skały…',o:['Luźne','Lite','Zwięzłe','Magmowe'],a:'Luźne'},
+      {t:'c',q:'Gleba zawiera składniki ożywione czyli…',o:['Organizmy glebowe','Okruchy skalne','Próchnicę','Powietrze'],a:'Organizmy glebowe'},
+      {t:'c',q:'Rzeki, potoki, strumienie to wody…',o:['Słodkie płynące','Słodkie stojące','Słone','Podziemne'],a:'Słodkie płynące'},
+      {t:'c',q:'Jeziora, bagna i stawy to wody…',o:['Słodkie stojące','Słodkie płynące','Słone','Morskie'],a:'Słodkie stojące'},
+      {t:'c',q:'Krajobraz kulturowy to efekt…',o:['Działalności człowieka','Sił przyrody','Zmian klimatu','Erupcji wulkanów'],a:'Działalności człowieka'},
+      {t:'c',q:'Formą ochrony przyrody jest…',o:['Park narodowy','Centrum handlowe','Fabryka','Lotnisko'],a:'Park narodowy'},
+    ]},
+    {name:'Życie w wodzie (Dział 8)',icon:'🐟',questions:[
+      {t:'c',q:'Opór środowiska w wodzie jest…',o:['Duży','Mały','Taki sam jak na lądzie','Brak oporu'],a:'Duży'},
+      {t:'c',q:'Cecha zwierząt wodnych umożliwiająca życie w wodzie:',o:['Opływowy kształt ciała','Skrzydła','Sierść','Ciepłokrwistość'],a:'Opływowy kształt ciała'},
+      {t:'c',q:'Granicę fotosyntezy w wodzie wyznacza…',o:['Głębokość docierania światła','Temperatura wody','Prądy morskie','Zawartość soli'],a:'Głębokość docierania światła'},
+      {t:'c',q:'Zimą woda nie zamarza do dna co umożliwia…',o:['Przetrwanie organizmów','Szybszy przepływ','Lepszy dostęp tlenu','Rozwój planktonu'],a:'Przetrwanie organizmów'},
+      {t:'c',q:'Plankton to organizmy które…',o:['Nie opierają się prądom wody','Pływają szybko','Żyją tylko na dnie','Są widoczne gołym okiem'],a:'Nie opierają się prądom wody'},
+      {t:'c',q:'Największa szybkość wody jest w…',o:['Biegu górnym','Biegu środkowym','Biegu dolnym','Przy ujściu'],a:'Biegu górnym'},
+      {t:'c',q:'Dno rzeki w biegu dolnym pokryte jest…',o:['Piaskiem i mułem','Kamieniami','Piaskiem i żwirem','Skałami litymi'],a:'Piaskiem i mułem'},
+      {t:'c',q:'Kraina pstrąga i lipienia to…',o:['Bieg górny','Bieg środkowy','Bieg dolny','Przy ujściu'],a:'Bieg górny'},
+      {t:'c',q:'Chlorella i skrętnica to…',o:['Rośliny planktonowe','Zwierzęta planktonowe','Ryby','Rośliny zanurzone'],a:'Rośliny planktonowe'},
+      {t:'c',q:'Najlepsze warunki w jeziorze panują w strefach…',o:['Przybrzeżnej i otwartej toni','Tylko głębokiej','Tylko przybrzeżnej','Wszędzie jednakowo'],a:'Przybrzeżnej i otwartej toni'},
+    ]},
+    {name:'Las, łąka i pole (Dział 8)',icon:'🌳',questions:[
+      {t:'c',q:'Jakie typy lasów rosną w Polsce?',o:['Iglaste, liściaste i mieszane','Tylko tropikalne','Iglaste i równikowe','Tylko mieszane'],a:'Iglaste, liściaste i mieszane'},
+      {t:'c',q:'Które drzewo jest liściaste?',o:['Lipa','Sosna','Świerk','Modrzew'],a:'Lipa'},
+      {t:'c',q:'Które drzewo jest iglaste?',o:['Świerk','Dąb','Brzoza','Buk'],a:'Świerk'},
+      {t:'c',q:'Ile warstw tworzą rośliny w lesie?',o:['4','2','3','5'],a:'4'},
+      {t:'c',q:'Warstwa lasu z najmniej światła to…',o:['Ściółka','Korony drzew','Podszyt','Runo leśne'],a:'Ściółka'},
+      {t:'c',q:'Na łące dominują…',o:['Trawy','Drzewa','Krzewy','Mchy'],a:'Trawy'},
+      {t:'c',q:'Pszenica, żyto, owies i kukurydza to rośliny…',o:['Zbożowe','Warzywne','Oleiste','Okopowe'],a:'Zbożowe'},
+      {t:'c',q:'Len, słonecznik i rzepak to rośliny…',o:['Oleiste','Zbożowe','Warzywne','Lecznicze'],a:'Oleiste'},
+      {t:'c',q:'Chwasty konkurują z roślinami uprawnymi o…',o:['Światło, wodę i miejsce','Tlen i CO₂','Składniki gleby','Zapylacze'],a:'Światło, wodę i miejsce'},
+      {t:'c',q:'Przykładem szkodnika upraw jest…',o:['Stonka ziemniaczana','Biedronka','Pszczoła','Dżdżownica'],a:'Stonka ziemniaczana'},
+    ]},
+  ]},
+  history:{name:'Historia',icon:'🏰',color:'var(--history)',chapters:[
+    {name:'Historia i jej źródła (Rozdz. I)',icon:'📜',questions:[
+      {t:'c',q:'Nauka zajmująca się badaniem przeszłości to…',o:['Historia','Baśń','Legenda','Geografia'],a:'Historia'},
+      {t:'c',q:'Opowieść z elementami magii to…',o:['Baśń','Legenda','Historia','Kronika'],a:'Baśń'},
+      {t:'c',q:'Opowieść z prawdziwymi i zmyślonymi postaciami to…',o:['Legenda','Baśń','Kronika','Historia'],a:'Legenda'},
+      {t:'c',q:'Które źródło historyczne jest NIEPISANE?',o:['Miecz','Pamiętnik','Gazeta','List'],a:'Miecz'},
+      {t:'c',q:'Data narodzin Jezusa to…',o:['Początek naszej ery','Koniec prehistorii','Początek średniowiecza','Koniec I tysiąclecia'],a:'Początek naszej ery'},
+      {t:'c',q:'Prawidłowa kolejność epok od najwcześniejszej:',o:['Starożytność → Średniowiecze → Nowożytność → Współczesność','Średniowiecze → Starożytność → Nowożytność','Nowożytność → Starożytność → Średniowiecze','Współczesność → Nowożytność → Starożytność'],a:'Starożytność → Średniowiecze → Nowożytność → Współczesność'},
+      {t:'c',q:'Jak zapiszemy 9 cyframi rzymskimi?',o:['IX','XI','IIX','IV'],a:'IX'},
+      {t:'c',q:'Co oznacza XVII?',o:['17','27','7','71'],a:'17'},
+      {t:'c',q:'Chrzest Polski w 966 r. to…',o:['X wiek','IX wiek','XI wiek','VIII wiek'],a:'X wiek'},
+      {t:'c',q:'Do źródeł NIEMATERIALNYCH zaliczamy…',o:['Obyczaje','Dokumenty','Budowle','Stroje'],a:'Obyczaje'},
+    ]},
+    {name:'Piastowie i początki Polski (Rozdz. II)',icon:'👑',questions:[
+      {t:'c',q:'Któremu władcy Polska zawdzięcza chrzest?',o:['Mieszkowi I','Bolesławowi Chrobremu','Kazimierzowi Wielkiemu','Łokietkowi'],a:'Mieszkowi I'},
+      {t:'c',q:'"Zastał drewnianą, zostawił murowaną" — to powiedzenie o…',o:['Kazimierzu Wielkim','Mieszku I','Bolesławie Chrobrym','Jadwidze'],a:'Kazimierzu Wielkim'},
+      {t:'i',q:'W którym roku Kazimierz Wielki założył pierwszą wyższą uczelnię w Polsce?',a:'1364'},
+      {t:'c',q:'Postaci legendarne to…',o:['Lech i Popiel','Zawisza Czarny i Święty Wojciech','Mieszko I i Bolesław','Jadwiga i Jagiełło'],a:'Lech i Popiel'},
+      {t:'c',q:'Pierwsza historyczna dynastia polska to…',o:['Piastowie','Jagiellonowie','Wazowie','Andegawenowie'],a:'Piastowie'},
+      {t:'c',q:'Mieszko I to…',o:['Pierwszy historyczny władca, dynastia Piastów','Pierwszy król Polski, zjazd gnieźnieński','Władca z Litwy, pojął Jadwigę','Astronom z Torunia'],a:'Pierwszy historyczny władca, dynastia Piastów'},
+      {t:'c',q:'Jagiełło to…',o:['Władca z Litwy, przyjął chrzest, poślubił Jadwigę','Pierwszy historyczny władca','Astronom','Budowniczy zamków'],a:'Władca z Litwy, przyjął chrzest, poślubił Jadwigę'},
+      {t:'c',q:'Bitwa pod Grunwaldem zakończyła się…',o:['Klęską Krzyżaków','Klęską Polski','Remisem','Rozejmem'],a:'Klęską Krzyżaków'},
+      {t:'c',q:'Pierwszą stolicą Polski było…',o:['Gniezno','Kraków','Warszawa','Poznań'],a:'Gniezno'},
+      {t:'c',q:'Celem wyprawy biskupa Wojciecha do Prusów było…',o:['Nawrócenie ich na chrześcijaństwo','Podbój ziem','Zawarcie pokoju','Budowa kościołów'],a:'Nawrócenie ich na chrześcijaństwo'},
+    ]},
+    {name:'Polska w XVII–XIX w. (Rozdz. III)',icon:'⚔️',questions:[
+      {t:'c',q:'Dowódca Legionów Polskich we Włoszech uwieczniony w hymnie to…',o:['Jan Henryk Dąbrowski','Stefan Czarniecki','Tadeusz Kościuszko','Jan III Sobieski'],a:'Jan Henryk Dąbrowski'},
+      {t:'c',q:'Dwie Nagrody Nobla, pierwiastki rad i polon — to…',o:['Maria Skłodowska-Curie','Emilia Plater','Klementyna Hoffmanowa','Narcyza Żmichowska'],a:'Maria Skłodowska-Curie'},
+      {t:'c',q:'Walka podjazdowa, potop szwedzki — to…',o:['Stefan Czarniecki','Jan III Sobieski','Kościuszko','Dąbrowski'],a:'Stefan Czarniecki'},
+      {t:'c',q:'Rozbiorów Polski dokonały…',o:['Rosja, Prusy, Austria','Rosja, Francja, Niemcy','Austria, Szwecja, Turcja','Prusy, Anglia, Francja'],a:'Rosja, Prusy, Austria'},
+      {t:'c',q:'Tadeusz Kościuszko zasłynął…',o:['Bitwą pod Racławicami','Obroną Jasnej Góry','Oblężeniem Pskowa','Odsieczą wiedeńską'],a:'Bitwą pod Racławicami'},
+      {t:'c',q:'Jan III Sobieski zasłynął…',o:['Odsieczą wiedeńską 1683','Bitwą pod Racławicami','Obroną Jasnej Góry','Oblężeniem Pskowa'],a:'Odsieczą wiedeńską 1683'},
+      {t:'c',q:'Husaria to…',o:['Ciężkozbrojna jazda polska','Lekka piechota','Artyleria','Piechota górska'],a:'Ciężkozbrojna jazda polska'},
+      {t:'c',q:'Legiony Polskie we Włoszech (1797) utworzono aby…',o:['Walczyć o niepodległość u boku Napoleona','Bronić Włoch','Wspierać rewolucję','Walczyć z Turcją'],a:'Walczyć o niepodległość u boku Napoleona'},
+      {t:'i',q:'W którym roku uchwalono Konstytucję 3 Maja?',a:'1791'},
+      {t:'c',q:'Które wydarzenia rozegrały się w XVIII w.?',o:['3. rozbiór i powstanie kościuszkowskie','Potop szwedzki i odsiecz wiedeńska','Powstanie styczniowe','Legiony Polskie'],a:'3. rozbiór i powstanie kościuszkowskie'},
+    ]},
+    {name:'Polska w XX w. (Rozdz. IV)',icon:'🪖',questions:[
+      {t:'c',q:'Budowa portu w Gdyni po 1918 roku dawała…',o:['Dostęp do morza i handel','Nową stolicę','Tylko rybołówstwo','Fortecę wojskową'],a:'Dostęp do morza i handel'},
+      {t:'c',q:'Dowódca Legionów, Naczelnik Państwa 1918 to…',o:['Józef Piłsudski','Prymas Wyszyński','Lech Wałęsa','Kościuszko'],a:'Józef Piłsudski'},
+      {t:'c',q:'Solidarność i Pokojowa Nagroda Nobla — to…',o:['Lech Wałęsa','Józef Piłsudski','Karol Wojtyła','Stefan Wyszyński'],a:'Lech Wałęsa'},
+      {t:'c',q:'Akcja pod Arsenałem to zasługa…',o:['Szarych Szeregów','Armii Krajowej','Legionów Polskich','Żołnierzy wyklętych'],a:'Szarych Szeregów'},
+      {t:'c',q:'"Żołnierze wyklęci" walczyli po II wojnie z…',o:['Władzą komunistyczną','Niemcami','Rosją carską','Austrią'],a:'Władzą komunistyczną'},
+      {t:'c',q:'Jan Paweł II jest papieżem pielgrzymem bo…',o:['Odwiedzał kraje świata','Chodził pieszo do Jerozolimy','Był pierwszym papieżem Polakiem','Zreformował Kościół'],a:'Odwiedzał kraje świata'},
+      {t:'c',q:'II wojna światowa rozpoczęła się…',o:['1 września 1939','17 września 1939','1 września 1914','3 września 1939'],a:'1 września 1939'},
+      {t:'c',q:'Powstanie Wielkopolskie zakończyło się…',o:['Sukcesem Polaków','Klęską Polaków','Remisem','Zostało przerwane'],a:'Sukcesem Polaków'},
+      {t:'c',q:'Obrady Okrągłego Stołu to…',o:['Rozmowy komunistów z opozycją','Konferencja pokojowa','Zjazd partii','Spotkanie NATO'],a:'Rozmowy komunistów z opozycją'},
+      {t:'c',q:'Szare Szeregi to…',o:['Harcerze konspiracyjni w II wojnie','Oddział AK','Formacja kawalerii','Żołnierze po 1945'],a:'Harcerze konspiracyjni w II wojnie'},
+    ]},
+  ]},
+}};
+// Clone class 4 for 5 and 6
+DB[5]=JSON.parse(JSON.stringify(DB[4]));
+DB[6]=JSON.parse(JSON.stringify(DB[4]));
+
+// ═══════════════════════════════════════════════════
+//  FLASHCARD DATABASE
+// ═══════════════════════════════════════════════════
+const FC=[
+  {en:'apple',pl:'jabłko',cat:'Owoce 🍎'},{en:'banana',pl:'banan',cat:'Owoce 🍎'},{en:'orange',pl:'pomarańcza',cat:'Owoce 🍎'},
+  {en:'dog',pl:'pies',cat:'Zwierzęta 🐾'},{en:'cat',pl:'kot',cat:'Zwierzęta 🐾'},{en:'horse',pl:'koń',cat:'Zwierzęta 🐾'},
+  {en:'elephant',pl:'słoń',cat:'Zwierzęta 🐾'},{en:'rabbit',pl:'królik',cat:'Zwierzęta 🐾'},{en:'tiger',pl:'tygrys',cat:'Zwierzęta 🐾'},
+  {en:'giraffe',pl:'żyrafa',cat:'Zwierzęta 🐾'},{en:'bear',pl:'niedźwiedź',cat:'Zwierzęta 🐾'},
+  {en:'house',pl:'dom',cat:'Dom 🏠'},{en:'kitchen',pl:'kuchnia',cat:'Dom 🏠'},{en:'bedroom',pl:'sypialnia',cat:'Dom 🏠'},
+  {en:'school',pl:'szkoła',cat:'Edukacja 📚'},{en:'teacher',pl:'nauczyciel',cat:'Edukacja 📚'},{en:'book',pl:'książka',cat:'Edukacja 📚'},
+  {en:'mother',pl:'mama',cat:'Rodzina 👨‍👩‍👧'},{en:'father',pl:'tata',cat:'Rodzina 👨‍👩‍👧'},{en:'sister',pl:'siostra',cat:'Rodzina 👨‍👩‍👧'},
+  {en:'brother',pl:'brat',cat:'Rodzina 👨‍👩‍👧'},{en:'grandmother',pl:'babcia',cat:'Rodzina 👨‍👩‍👧'},{en:'grandfather',pl:'dziadek',cat:'Rodzina 👨‍👩‍👧'},
+  {en:'red',pl:'czerwony',cat:'Kolory 🎨'},{en:'blue',pl:'niebieski',cat:'Kolory 🎨'},{en:'green',pl:'zielony',cat:'Kolory 🎨'},
+  {en:'yellow',pl:'żółty',cat:'Kolory 🎨'},{en:'black',pl:'czarny',cat:'Kolory 🎨'},{en:'white',pl:'biały',cat:'Kolory 🎨'},
+  {en:'Monday',pl:'poniedziałek',cat:'Dni tygodnia 📅'},{en:'Tuesday',pl:'wtorek',cat:'Dni tygodnia 📅'},{en:'Wednesday',pl:'środa',cat:'Dni tygodnia 📅'},
+  {en:'Thursday',pl:'czwartek',cat:'Dni tygodnia 📅'},{en:'Friday',pl:'piątek',cat:'Dni tygodnia 📅'},{en:'Saturday',pl:'sobota',cat:'Dni tygodnia 📅'},
+  {en:'spring',pl:'wiosna',cat:'Pory roku 🌸'},{en:'summer',pl:'lato',cat:'Pory roku 🌸'},{en:'autumn',pl:'jesień',cat:'Pory roku 🌸'},{en:'winter',pl:'zima',cat:'Pory roku 🌸'},
+];
+
+// ═══════════════════════════════════════════════════
+//  BADGES
+// ═══════════════════════════════════════════════════
+const BADGES={
+  first_test:{icon:'🎯',name:'Pierwszy test'},
+  perfect:{icon:'💎',name:'Perfekcja 100%'},
+  math_done:{icon:'🔢',name:'Mistrz Matmy'},
+  polish_done:{icon:'📖',name:'Polonista'},
+  eng_done:{icon:'🌍',name:'Anglofil'},
+  nature_done:{icon:'🌿',name:'Przyrodnik'},
+  hist_done:{icon:'🏰',name:'Historyk'},
+  speed:{icon:'⚡',name:'Błyskawica <30s'},
+  streak_3:{icon:'🔥',name:'Seria ×3'},
+  streak_5:{icon:'🔥🔥',name:'Seria ×5'},
+  streak_7:{icon:'🔥🔥🔥',name:'Seria ×7'},
+  lvl5:{icon:'💫',name:'Poziom 5'},
+  lvl10:{icon:'🌟',name:'Poziom 10'},
+  daily:{icon:'🌅',name:'Wyzwanie Dnia'},
+  week:{icon:'📆',name:'7 dni z rzędu'},
+  fc10:{icon:'🃏',name:'Fiszki: 10 znanych'},
+  comeback:{icon:'💪',name:'Powrót! (poprawa)'},
+  all4:{icon:'🏅',name:'Klasa 4 opanowana'},
+  night:{icon:'🦉',name:'Nocna sowa'},
+  tests10:{icon:'🚀',name:'10 testów'},
+};
+
+// ═══════════════════════════════════════════════════
+//  AVATAR / COLOR OPTIONS
+// ═══════════════════════════════════════════════════
+const AVEMOJIS=['🦁','🦊','🐯','🐻','🐼','🦄','🦋','🐲','🌟','⚡','🚀','🎮'];
+const PCOLORS=['#7c3aed','#06b6d4','#10b981','#f59e0b','#f43f5e','#a855f7'];
+
+// ═══════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════
+let CFG={sound:true,tts:true,timer:false,shuffle:true};
+function loadCFG(){
+  const s=JSON.parse(localStorage.getItem('es3_cfg')||'{}');
+  CFG={...CFG,...s};
+  const t=document.body.dataset.theme;
+  ['toggleTheme','toggleSound','toggleTts','toggleTimer','toggleShuffle'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const key=id.replace('toggle','').toLowerCase();
+    if(key==='theme') el.classList.toggle('on',t==='light');
+    else el.classList.toggle('on',!!CFG[key]);
+  });
+}
+function saveCFG(){localStorage.setItem('es3_cfg',JSON.stringify(CFG))}
+function toggleSet(k){
+  if(k==='theme'){
+    const isLight=document.body.dataset.theme==='light';
+    document.body.dataset.theme=isLight?'dark':'light';
+    document.getElementById('themeColorMeta').content=isLight?'#060614':'#f0f4ff';
+    localStorage.setItem('es3_theme',document.body.dataset.theme);
+  } else {
+    CFG[k]=!CFG[k]; saveCFG();
+  }
+  loadCFG(); snd('click');
+}
+
+// ═══════════════════════════════════════════════════
+//  PROFILES
+// ═══════════════════════════════════════════════════
+let cPid=null, cProfile=null;
+function getProfiles(){return JSON.parse(localStorage.getItem('es3_profiles')||'[]')}
+function saveProfiles(p){localStorage.setItem('es3_profiles',JSON.stringify(p))}
+function getPData(id){
+  const all=JSON.parse(localStorage.getItem('es3_data')||'{}');
+  return all[id]||{xp:0,tests:0,badges:[],done:{},activity:{},streak:0,lastDay:null};
+}
+function savePData(id,d){
+  const all=JSON.parse(localStorage.getItem('es3_data')||'{}');
+  all[id]=d; localStorage.setItem('es3_data',JSON.stringify(all));
+}
+function level(xp){
+  const thr=[0,100,250,450,700,1000,1400,1900,2500,3200,4000,5000];
+  let lv=1;
+  for(let i=0;i<thr.length;i++) if(xp>=thr[i]) lv=i+1;
+  const cur=thr[Math.min(lv-1,thr.length-1)];
+  const nxt=thr[Math.min(lv,thr.length-1)];
+  const pct=nxt===cur?100:Math.round((xp-cur)/(nxt-cur)*100);
+  return{lv,cur,nxt,pct,toNext:Math.max(0,nxt-xp)};
+}
+
+function renderProfiles(){
+  const profiles=getProfiles();
+  const grid=document.getElementById('profilesGrid');
+  let html=profiles.map(p=>{
+    const d=getPData(p.id);
+    const lv=level(d.xp);
+    return`<div class="profile-card"style="--pc:${p.color}"onclick="pickProfile('${p.id}')"oncontextmenu="delProfile(event,'${p.id}')">
+      <div class="p-avatar">${p.av}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-level"><span class="p-level-dot"></span>Poziom ${lv.lv}</div>
+      <div class="p-xp-bar"><div class="p-xp-fill"style="width:${lv.pct}%"></div></div>
+    </div>`;
+  }).join('');
+  if(profiles.length<4) html+=`<div class="add-profile"onclick="openAddProfile()"><div class="add-profile-icon">➕</div><span>Nowy uczeń</span></div>`;
+  grid.innerHTML=html;
+  // long press for delete
+  grid.querySelectorAll('.profile-card').forEach(el=>{
+    let t;
+    el.addEventListener('touchstart',()=>t=setTimeout(()=>{const m=el.getAttribute('onclick').match(/'([^']+)'/);if(m)delProfile(null,m[1]);},700));
+    el.addEventListener('touchend',()=>clearTimeout(t));
+  });
+}
+
+function pickProfile(id){
+  snd('click');
+  cPid=id;
+  const ps=getProfiles();
+  cProfile=ps.find(p=>p.id===id);
+  updateHomeUI();
+  goto('sHome');
+}
+
+function openAddProfile(){
+  snd('click');
+  const o=document.createElement('div');
+  o.className='modal-overlay';
+  o.id='addModal';
+  o.innerHTML=`<div class="modal">
+    <div class="modal-title">✨ Nowy uczeń</div>
+    <div class="avatar-grid">${AVEMOJIS.map((a,i)=>`<div class="av-opt${i===0?' sel':''}"onclick="pickAv(this,'${a}')">${a}</div>`).join('')}</div>
+    <div class="color-row">${PCOLORS.map((c,i)=>`<div class="cl-opt${i===0?' sel':''}"style="background:${c}"onclick="pickCl(this,'${c}')"></div>`).join('')}</div>
+    <input class="m-input" id="newName" placeholder="Imię ucznia…" maxlength="16">
+    <button class="m-btn" onclick="createProfile()">Utwórz profil 🎉</button>
+    <span class="m-close" onclick="closeModal()">Anuluj</span>
+  </div>`;
+  document.body.appendChild(o);
+  setTimeout(()=>document.getElementById('newName')?.focus(),120);
+  o.addEventListener('click',e=>{if(e.target===o)closeModal();});
+}
+function pickAv(el,av){document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('sel'));el.classList.add('sel')}
+function pickCl(el){document.querySelectorAll('.cl-opt').forEach(e=>e.classList.remove('sel'));el.classList.add('sel')}
+function createProfile(){
+  const name=document.getElementById('newName')?.value?.trim();
+  if(!name){toast('⚠️ Wpisz imię!','err');return;}
+  const av=document.querySelector('.av-opt.sel')?.textContent||'🦉';
+  const color=document.querySelector('.cl-opt.sel')?.style?.background||PCOLORS[0];
+  const ps=getProfiles();
+  const id='p'+Date.now();
+  ps.push({id,name,av,color});
+  saveProfiles(ps);
+  closeModal(); renderProfiles(); snd('correct');
+  toast(`🎉 Witaj, ${name}!`,'ok');
+}
+function closeModal(){document.getElementById('addModal')?.remove()}
+function delProfile(e,id){
+  if(e) e.preventDefault();
+  const ps=getProfiles();
+  const p=ps.find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm(`Usunąć profil "${p.name}"? Wszystkie dane zostaną utracone.`)) return;
+  saveProfiles(ps.filter(x=>x.id!==id));
+  const all=JSON.parse(localStorage.getItem('es3_data')||'{}');
+  delete all[id]; localStorage.setItem('es3_data',JSON.stringify(all));
+  if(cPid===id){cPid=null;cProfile=null;}
+  renderProfiles(); snd('wrong');
+}
+
+// ═══════════════════════════════════════════════════
+//  XP / LEVEL
+// ═══════════════════════════════════════════════════
+function addXP(amt){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const oldLv=level(d.xp).lv;
+  d.xp=(d.xp||0)+amt;
+  const newLv=level(d.xp).lv;
+  savePData(cPid,d);
+  refreshXPBar();
+  if(newLv>oldLv){
+    setTimeout(()=>{toast(`🎉 POZIOM ${newLv}! Level UP!`,'ach');confetti();},400);
+    if(newLv>=5) award('lvl5');
+    if(newLv>=10) award('lvl10');
+  }
+}
+function refreshXPBar(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const lv=level(d.xp);
+  const fills=[document.getElementById('qzXpFill'),document.getElementById('hXpFill')];
+  fills.forEach(f=>{ if(f) f.style.width=lv.pct+'%'; });
+  const lvEls=[document.getElementById('qzLvl'),document.getElementById('hLevel')];
+  lvEls.forEach(el=>{ if(el) el.textContent=lv.lv; });
+  const xpEl=document.getElementById('qzXpVal');
+  if(xpEl) xpEl.textContent=d.xp;
+}
+
+// ═══════════════════════════════════════════════════
+//  STREAK
+// ═══════════════════════════════════════════════════
+function updateStreak(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const today=new Date().toDateString();
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  if(d.lastDay===today) return;
+  if(d.lastDay===yesterday) d.streak=(d.streak||0)+1;
+  else d.streak=1;
+  d.lastDay=today;
+  if(!d.activity) d.activity={};
+  d.activity[today]=true;
+  savePData(cPid,d);
+  if(d.streak>=7) award('week');
+}
+function refreshStreak(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const s=d.streak||0;
+  document.getElementById('streakNum').textContent=s;
+  document.getElementById('stStreak').textContent=s;
+  const today=new Date();
+  const days=['N','P','W','Ś','C','P','S'];
+  let html='';
+  for(let i=6;i>=0;i--){
+    const dt=new Date(today-i*86400000);
+    const k=dt.toDateString();
+    const lit=(d.activity||{})[k];
+    const isToday=i===0;
+    html+=`<div class="s-dot${lit?' lit':''}${isToday?' today':''}">${days[dt.getDay()]}</div>`;
+  }
+  document.getElementById('streakDots').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════
+//  HOME UI
+// ═══════════════════════════════════════════════════
+function updateHomeUI(){
+  if(!cProfile) return;
+  document.getElementById('homeAv').textContent=cProfile.av;
+  document.getElementById('homeName').textContent=cProfile.name;
+  document.getElementById('heroName').textContent=cProfile.name+'!';
+  const d=getPData(cPid);
+  const lv=level(d.xp);
+  document.getElementById('hTests').textContent=d.tests||0;
+  document.getElementById('hBadges').textContent=(d.badges||[]).length;
+  document.getElementById('hLevel').textContent=lv.lv;
+  document.getElementById('hXpFill').style.width=lv.pct+'%';
+  document.getElementById('stTests').textContent=d.tests||0;
+  document.getElementById('stXP').textContent=d.xp||0;
+  document.getElementById('stBadges').textContent=(d.badges||[]).length;
+  refreshStreak();
+  updateDailyCard();
+  updateClassProg();
+  checkHeroSub();
+}
+function checkHeroSub(){
+  const d=getPData(cPid);
+  const h=new Date().getHours();
+  const greet=h<12?'Dzień dobry':'Hej';
+  const subs=['Gotowy na dzisiejsze wyzwanie?','Nauka to supermoc!','Każdy test to +XP!','Bądź mistrzem wiedzy!'];
+  document.getElementById('heroSub').textContent=subs[Math.floor(Math.random()*subs.length)];
+}
+function updateClassProg(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  [4,5,6].forEach(cls=>{
+    let tot=0,done=0;
+    Object.keys(DB[cls]).forEach(s=>{
+      DB[cls][s].chapters.forEach((_,i)=>{tot++;if(d.done&&d.done[`${cls}_${s}_${i}`])done++;});
+    });
+    const el=document.getElementById('pc'+cls);
+    if(el) el.style.width=(tot?Math.round(done/tot*100):0)+'%';
+  });
+}
+function updateSubjProg(){
+  if(!cPid||!Q.cls) return;
+  const d=getPData(cPid);
+  Object.keys(DB[Q.cls]).forEach(s=>{
+    const chs=DB[Q.cls][s].chapters;
+    let done=0;
+    chs.forEach((_,i)=>{if(d.done&&d.done[`${Q.cls}_${s}_${i}`])done++;});
+    const el=document.getElementById('sp-'+s);
+    if(el) el.style.width=Math.round(done/chs.length*100)+'%';
+  });
+}
+function updateDailyCard(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const today=new Date().toDateString();
+  const done=d.dailyDone===today;
+  const card=document.getElementById('dailyCard');
+  const chip=document.getElementById('dailyChip');
+  const sub=document.getElementById('dailySub');
+  card.classList.toggle('done',done);
+  if(done){chip.textContent='✅ Zaliczone!';sub.textContent='Wróć jutro po nowe wyzwanie';}
+  else{chip.textContent='+50 XP';sub.textContent='5 pytań z różnych przedmiotów';}
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+let hist=[];
+function goto(id){
+  if(speechSynthesis?.speaking) speechSynthesis.cancel();
+  if(Q.timer){clearInterval(Q.timer);Q.timer=null;}
+  const prev=document.querySelector('.screen.active');
+  if(prev) hist.push(prev.id);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const next=document.getElementById(id);
+  if(next){next.classList.add('active');next.scrollTop=0;window.scrollTo(0,0);}
+  // screen inits
+  if(id==='sProfiles') renderProfiles();
+  if(id==='sDashboard') renderDash();
+  if(id==='sFlashcards') initFC();
+  if(id==='sHome'){updateHomeUI();}
+  if(id==='sSubjects') updateSubjProg();
+  if(id==='sSettings') loadCFG();
+}
+
+// ═══════════════════════════════════════════════════
+//  QUIZ STATE
+// ═══════════════════════════════════════════════════
+const Q={cls:null,subj:null,chap:null,qs:[],cur:0,score:0,cstreak:0,t0:0,answered:false,timer:null,isDaily:false,color:'var(--neon)',prevScore:null};
+
+function selectClass(cls){
+  if(!cPid){toast('👤 Wybierz profil!','inf');goto('sProfiles');return;}
+  snd('click');Q.cls=cls;
+  document.getElementById('subjTitle').textContent=`Klasa ${cls}`;
+  goto('sSubjects');
+}
+function selectSubject(subj){
+  snd('click');Q.subj=subj;
+  const data=DB[Q.cls][subj];
+  document.getElementById('chapTitle').textContent=`${data.icon} ${data.name}`;
+  document.getElementById('sChapters').style.setProperty('--cc',data.color);
+  renderChapters(data);
+  goto('sChapters');
+}
+function renderChapters(data){
+  const d=getPData(cPid);
+  document.getElementById('chapList').innerHTML=data.chapters.map((ch,i)=>{
+    const key=`${Q.cls}_${Q.subj}_${i}`;
+    const best=d.done&&d.done[key];
+    const pct=best?Math.round(best/ch.questions.length*100):0;
+    const bestTxt=best?`<span class="chap-best">${best}/${ch.questions.length}</span>`:'<span style="color:var(--text3)">Nie zrobiony</span>';
+    return`<div class="chap-card"onclick="startChap(${i})">
+      <div class="chap-num">${ch.icon||i+1}</div>
+      <div class="chap-info">
+        <div class="chap-name">${ch.name}</div>
+        <div class="chap-meta">${ch.questions.length} pytań · ${bestTxt}</div>
+        <div class="chap-prog"><div class="chap-prog-fill"style="width:${pct}%"></div></div>
+      </div>
+      ${best?'<div class="chap-done">✅</div>':''}
+      <div class="chap-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+function startChap(idx){
+  snd('click');
+  Q.chap=idx; Q.isDaily=false;
+  const ch=DB[Q.cls][Q.subj].chapters[idx];
+  const d=getPData(cPid);
+  Q.prevScore=d.done?.[`${Q.cls}_${Q.subj}_${idx}`]||null;
+  Q.qs=CFG.shuffle?shuffle([...ch.questions]):[...ch.questions];
+  resetQuizState();
+  Q.color=DB[Q.cls][Q.subj].color;
+  applyQuizColor();
+  document.getElementById('qzPill').textContent=`${DB[Q.cls][Q.subj].icon} ${DB[Q.cls][Q.subj].name}`;
+  document.getElementById('dailyQzBanner').style.display='none';
+  refreshXPBar();
+  goto('sQuiz');
+  renderQ();
+}
+function startDaily(){
+  if(!cPid){toast('👤 Wybierz profil!','inf');goto('sProfiles');return;}
+  const d=getPData(cPid);
+  if(d.dailyDone===new Date().toDateString()){toast('✅ Dzisiaj już zrobione!','inf');return;}
+  snd('click');
+  const subjs=Object.keys(DB[4]);
+  const qs=[];
+  subjs.forEach(s=>{
+    const ch=DB[4][s].chapters[Math.floor(Math.random()*DB[4][s].chapters.length)];
+    const q=ch.questions[Math.floor(Math.random()*ch.questions.length)];
+    qs.push({...q,_s:s});
+  });
+  Q.qs=shuffle(qs); Q.isDaily=true; Q.cls=4; Q.subj=null; Q.chap=null;
+  Q.color='var(--neon3)';
+  resetQuizState(); applyQuizColor();
+  document.getElementById('qzPill').textContent='🎯 Wyzwanie Dnia';
+  document.getElementById('dailyQzBanner').style.display='block';
+  refreshXPBar();
+  goto('sQuiz'); renderQ();
+}
+function resetQuizState(){Q.cur=0;Q.score=0;Q.cstreak=0;Q.t0=Date.now();Q.answered=false;}
+function applyQuizColor(){
+  document.getElementById('sQuiz').style.setProperty('--qc',Q.color);
+  document.getElementById('sResults').style.setProperty('--qc',Q.color);
+}
+
+function renderQ(){
+  if(Q.timer){clearInterval(Q.timer);Q.timer=null;}
+  const q=Q.qs[Q.cur]; const tot=Q.qs.length;
+  Q.answered=false;
+  // progress
+  const pct=Math.round(Q.cur/tot*100);
+  document.getElementById('qzProgFill').style.width=pct+'%';
+  document.getElementById('qzProgLabel').textContent=`Pytanie ${Q.cur+1} z ${tot}`;
+  document.getElementById('qzPct').textContent=pct+'%';
+  document.getElementById('qzNum').textContent=`Q${Q.cur+1}`;
+  document.getElementById('qzText').textContent=q.q;
+  document.getElementById('qzFeedback').style.display='none';
+  document.getElementById('nextBtn').classList.remove('show');
+  document.getElementById('ttsBbtn')?.classList?.remove('on');
+  document.getElementById('ttsBtn').classList.remove('on');
+  // options
+  if(q.t==='c'){
+    const opts=CFG.shuffle?shuffle([...q.o]):[...q.o];
+    const L=['A','B','C','D'];
+    document.getElementById('qzOptions').innerHTML=
+      `<div class="options">${opts.map((o,i)=>
+        `<button class="opt"data-v="${E(o)}"onclick="ansC(this,'${E(o)}','${E(q.a)}')">`+
+        `<span class="opt-letter">${L[i]}</span>${o}</button>`
+      ).join('')}</div>`;
+  } else {
+    document.getElementById('qzOptions').innerHTML=
+      `<div class="text-q-wrap">
+        <input class="text-q-input"id="tqInput"placeholder="Wpisz odpowiedź…"onkeydown="if(event.key==='Enter')ansI()">
+        <button class="check-btn"onclick="ansI()">✔ Sprawdź</button>
+      </div>`;
+    setTimeout(()=>document.getElementById('tqInput')?.focus(),80);
+  }
+  if(CFG.timer) startTimer();
+  else document.getElementById('timerWrap').style.display='none';
+}
+
+function startTimer(){
+  let tv=30;
+  const arc=document.getElementById('timerArc');
+  const txt=document.getElementById('timerTxt');
+  const circ=2*Math.PI*23;
+  document.getElementById('timerWrap').style.display='flex';
+  arc.style.strokeDashoffset=0; txt.textContent=30; txt.className='t-text';
+  Q.timer=setInterval(()=>{
+    tv--; arc.style.strokeDashoffset=circ*(1-tv/30);
+    txt.textContent=tv;
+    if(tv<=10) txt.className='t-text urg';
+    if(tv<=0){
+      clearInterval(Q.timer); Q.timer=null;
+      if(!Q.answered){snd('wrong');fb(false,'⏱️ Czas minął!');disableQ();Q.answered=true;document.getElementById('nextBtn').classList.add('show');}
+    }
+  },1000);
+}
+
+function ansC(btn,ev,ea){
+  if(Q.answered) return; Q.answered=true;
+  if(Q.timer){clearInterval(Q.timer);Q.timer=null;}
+  const v=D(ev),a=D(ea);
+  document.querySelectorAll('.opt').forEach(b=>{
+    b.disabled=true;
+    if(D(b.dataset.v)===a) b.classList.add('cor');
+    else if(b===btn&&v!==a) b.classList.add('wrg');
+  });
+  handleAns(v===a);
+}
+function ansI(){
+  if(Q.answered) return;
+  const inp=document.getElementById('tqInput');
+  if(!inp||!inp.value.trim()) return;
+  Q.answered=true;
+  if(Q.timer){clearInterval(Q.timer);Q.timer=null;}
+  const q=Q.qs[Q.cur];
+  const ok=inp.value.trim().toLowerCase()===q.a.toLowerCase();
+  inp.disabled=true; document.querySelector('.check-btn').disabled=true;
+  inp.classList.add(ok?'cor':'wrg');
+  handleAns(ok,q.a);
+}
+function disableQ(){document.querySelectorAll('.opt,.check-btn,.text-q-input').forEach(e=>e.disabled=true)}
+function handleAns(ok,hint){
+  if(ok){
+    Q.score++; Q.cstreak++;
+    document.getElementById('qzScore').textContent=Q.score;
+    document.getElementById('qzStreakPill').textContent='🔥 '+Q.cstreak;
+    snd('correct'); addXP(10);
+    const msgs=['🎉 Świetnie!','⭐ Doskonale!','💪 Super!','🏆 Brawo!','✨ Znakomicie!','🎯 Celująco!'];
+    fb(true,msgs[Math.floor(Math.random()*msgs.length)]);
+    if(Q.cstreak===3) award('streak_3');
+    if(Q.cstreak===5) award('streak_5');
+    if(Q.cstreak===7) award('streak_7');
+  } else {
+    Q.cstreak=0; document.getElementById('qzStreakPill').textContent='🔥 0';
+    snd('wrong');
+    fb(false,`❌ Błąd!${hint?` Odp: "${hint}"`:''}`)
+  }
+  document.getElementById('nextBtn').classList.add('show');
+}
+function fb(ok,msg){
+  const el=document.getElementById('qzFeedback');
+  el.textContent=msg; el.className='feedback '+(ok?'ok':'no');
+  el.style.display='block';
+}
+function nextQ(){
+  snd('click');
+  if(speechSynthesis?.speaking) speechSynthesis.cancel();
+  Q.cur++;
+  if(Q.cur>=Q.qs.length) finishQuiz();
+  else renderQ();
+}
+
+// ═══════════════════════════════════════════════════
+//  FINISH QUIZ
+// ═══════════════════════════════════════════════════
+function finishQuiz(){
+  const tot=Q.qs.length, pct=Math.round(Q.score/tot*100);
+  const elapsed=Math.round((Date.now()-Q.t0)/1000);
+  updateStreak();
+  let xpEarned=Q.score*10;
+  if(pct>=80) xpEarned+=20;
+  if(pct===100) xpEarned+=30;
+  if(Q.isDaily) xpEarned=50;
+  if(cPid){
+    const d=getPData(cPid);
+    if(!d.done) d.done={};
+    if(Q.isDaily){d.dailyDone=new Date().toDateString();award('daily');}
+    else{
+      const key=`${Q.cls}_${Q.subj}_${Q.chap}`;
+      const prev=d.done[key]||0;
+      if(Q.score>prev&&prev>0) award('comeback');
+      d.done[key]=Math.max(Q.score,prev);
+    }
+    d.tests=(d.tests||0)+1;
+    savePData(cPid,d);
+    addXP(xpEarned);
+    if(d.tests>=10) award('tests10');
+    checkSubjComplete();
+  }
+  award('first_test');
+  if(pct===100) award('perfect');
+  if(elapsed<30) award('speed');
+  if(new Date().getHours()>=21) award('night');
+  // Render results
+  const emoji=pct>=90?'🏆':pct>=70?'😊':'💪';
+  const title=pct>=90?'Świetnie!':pct>=70?'Dobrze!':'Spróbuj jeszcze raz!';
+  const cls=pct>=90?'gr':pct>=70?'gd':'tr';
+  document.getElementById('resEmoji').textContent=emoji;
+  document.getElementById('resTitle').textContent=title;
+  document.getElementById('resTitle').className='res-title '+cls;
+  document.getElementById('resChap').textContent=Q.isDaily?'Wyzwanie Dnia':(Q.subj?DB[Q.cls][Q.subj].chapters[Q.chap]?.name:'');
+  document.getElementById('resPts').textContent=Q.score;
+  document.getElementById('resTot').textContent=tot;
+  document.getElementById('resCor').textContent=Q.score;
+  document.getElementById('resWrg').textContent=tot-Q.score;
+  document.getElementById('resTime').textContent=elapsed+'s';
+  // score ring
+  setTimeout(()=>{
+    document.getElementById('srArc').style.strokeDashoffset=352*(1-pct/100);
+  },120);
+  // xp block
+  if(cPid){
+    const d=getPData(cPid); const lv=level(d.xp);
+    document.getElementById('xeLvl').textContent=lv.lv;
+    document.getElementById('xeToNext').textContent=lv.toNext;
+    document.getElementById('xeText').textContent='+'+xpEarned+' XP';
+    setTimeout(()=>{document.getElementById('xeFill').style.width=lv.pct+'%';},200);
+  }
+  renderBadgesRes();
+  if(pct>=90){confetti();snd('fanfare');}
+  goto('sResults');
+}
+function checkSubjComplete(){
+  if(!cPid||Q.isDaily||!Q.subj) return;
+  const d=getPData(cPid);
+  const chs=DB[Q.cls][Q.subj].chapters;
+  const allDone=chs.every((_,i)=>d.done&&d.done[`${Q.cls}_${Q.subj}_${i}`]);
+  if(allDone){
+    const m={math:'math_done',polish:'polish_done',english:'eng_done',nature:'nature_done',history:'hist_done'};
+    if(m[Q.subj]) award(m[Q.subj]);
+    const allCls=Object.keys(DB[4]).every(s=>DB[4][s].chapters.every((_,i)=>d.done&&d.done[`4_${s}_${i}`]));
+    if(allCls) award('all4');
+  }
+}
+function renderBadgesRes(){
+  if(!cPid) return;
+  const d=getPData(cPid);
+  const card=document.getElementById('resBadgesCard');
+  const row=document.getElementById('resBadgesRow');
+  if(!d.badges||!d.badges.length){card.style.display='none';return;}
+  card.style.display='block';
+  row.innerHTML=d.badges.map(b=>{const bd=BADGES[b];return bd?`<div class="badge-chip">${bd.icon} ${bd.name}</div>`:''}).join('');
+}
+function retryQuiz(){snd('click');Q.isDaily?startDaily():startChap(Q.chap)}
+
+// ═══════════════════════════════════════════════════
+//  BADGES
+// ═══════════════════════════════════════════════════
+function award(key){
+  if(!cPid||!BADGES[key]) return;
+  const d=getPData(cPid);
+  if(!d.badges) d.badges=[];
+  if(d.badges.includes(key)) return;
+  d.badges.push(key); savePData(cPid,d);
+  const bd=BADGES[key];
+  toast(`🏅 ${bd.icon} ${bd.name}!`,'ach');
+}
+
+// ═══════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDash(){
+  const grid=document.getElementById('dashGrid');
+  if(!cPid){grid.innerHTML='<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">Wybierz profil</div></div>';return;}
+  const d=getPData(cPid); const lv=level(d.xp||0);
+  const colors={math:'var(--math)',polish:'var(--polish)',english:'var(--english)',nature:'var(--nature)',history:'var(--history)'};
+  const names={math:'Matematyka 🔢',polish:'Polski 📖',english:'Angielski 🌍',nature:'Przyroda 🌿',history:'Historia 🏰'};
+  // subject progress bars
+  let spbHtml='';
+  Object.keys(DB[4]).forEach(s=>{
+    const chs=DB[4][s].chapters; let done=0;
+    chs.forEach((_,i)=>{if(d.done&&d.done[`4_${s}_${i}`]) done++;});
+    const pct=Math.round(done/chs.length*100);
+    spbHtml+=`<div class="spb"><div class="spb-row"><span class="spb-name"style="color:${colors[s]}">${names[s]}</span><span class="spb-pct">${done}/${chs.length}</span></div><div class="spb-track"><div class="spb-fill"style="width:${pct}%;background:${colors[s]}"></div></div></div>`;
+  });
+  // heatmap
+  const today=new Date(); let hmHtml='';
+  for(let i=27;i>=0;i--){
+    const dt=new Date(today-i*86400000); const k=dt.toDateString();
+    const a=(d.activity||{})[k]?'a4':'';
+    hmHtml+=`<div class="hm-cell ${a}"></div>`;
+  }
+  // best scores
+  let best=[];
+  Object.keys(DB[4]).forEach(s=>{
+    DB[4][s].chapters.forEach((ch,i)=>{
+      const key=`4_${s}_${i}`;
+      const sc=d.done&&d.done[key];
+      if(sc) best.push({name:ch.name,subj:names[s],sc,tot:ch.questions.length,color:colors[s]});
+    });
+  });
+  best.sort((a,b)=>b.sc/b.tot-a.sc/a.tot);
+  const bestHtml=best.length?best.slice(0,4).map((it,i)=>{
+    const pct=Math.round(it.sc/it.tot*100);
+    return`<div class="sl-item"><div class="sl-rank">${i+1}</div><div class="sl-info"><div class="sl-name">${it.name}</div><div class="sl-sub"style="color:${it.color}">${it.subj}</div></div><div class="sl-score">${it.sc}/${it.tot} (${pct}%)</div></div>`;
+  }).join(''):
+  `<div style="color:var(--text3);font-size:.82rem;text-align:center;padding:8px">Brak ukończonych testów — zacznij naukę!</div>`;
+  // badges
+  const badgesHtml=(d.badges||[]).length?
+    (d.badges||[]).map(b=>{const bd=BADGES[b];return bd?`<div class="bd-item">${bd.icon} ${bd.name}</div>`:''}).join(''):
+    '<div style="color:var(--text3);font-size:.8rem">Brak odznak — rozwiąż testy!</div>';
+
+  grid.innerHTML=`
+    <div class="dash-card">
+      <div class="dc-title">Poziom</div>
+      <div class="level-center">
+        <div class="lc-num">${lv.lv}</div>
+        <div class="lc-lbl">${cProfile?.name}</div>
+        <div class="lc-bar"><div class="lc-fill"style="width:${lv.pct}%"></div></div>
+        <div class="lc-xp">${d.xp||0} XP · do ${lv.nxt} XP</div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <div class="dc-title">Statystyki</div>
+      <div class="mini-stats">
+        <div class="ms-row"><span class="ms-lbl">🎯 Testy</span><span class="ms-val">${d.tests||0}</span></div>
+        <div class="ms-row"><span class="ms-lbl">🏅 Odznaki</span><span class="ms-val">${(d.badges||[]).length}/${Object.keys(BADGES).length}</span></div>
+        <div class="ms-row"><span class="ms-lbl">🔥 Seria</span><span class="ms-val">${d.streak||0} dni</span></div>
+        <div class="ms-row"><span class="ms-lbl">⭐ XP</span><span class="ms-val">${d.xp||0}</span></div>
+      </div>
+    </div>
+    <div class="dash-card span2">
+      <div class="dc-title">Postęp w przedmiotach — Klasa 4</div>
+      <div class="spb-list">${spbHtml}</div>
+    </div>
+    <div class="dash-card span2">
+      <div class="dc-title">Aktywność — ostatnie 28 dni</div>
+      <div class="heatmap">${hmHtml}</div>
+    </div>
+    <div class="dash-card span2">
+      <div class="dc-title">Najlepsze wyniki</div>
+      <div class="score-list">${bestHtml}</div>
+    </div>
+    <div class="dash-card span2">
+      <div class="dc-title">Odznaki (${(d.badges||[]).length}/${Object.keys(BADGES).length})</div>
+      <div class="badges-grid-dash">${badgesHtml}</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+//  FLASHCARDS
+// ═══════════════════════════════════════════════════
+let FCS={cards:[],idx:0,known:0,unknown:0,flipped:false};
+function initFC(){
+  FCS.cards=shuffle([...FC]);
+  FCS.idx=0;FCS.known=0;FCS.unknown=0;FCS.flipped=false;
+  renderFC();
+}
+function renderFC(){
+  if(FCS.idx>=FCS.cards.length){
+    document.getElementById('flashcard').innerHTML=`
+      <div class="fc-side"><div class="fc-lang">🎉 Koniec!</div><div class="fc-word">Brawo!</div><div class="fc-hint">Kliknij 🔀 żeby zacząć od nowa</div></div>`;
+    document.getElementById('fcFill').style.width='100%';
+    if(FCS.known>=10) award('fc10');
+    return;
+  }
+  const card=FCS.cards[FCS.idx];
+  document.getElementById('flashcard').classList.remove('flipped');
+  FCS.flipped=false;
+  document.getElementById('fcEn').textContent=card.en;
+  document.getElementById('fcPl').textContent=card.pl;
+  document.getElementById('fcCat').textContent=card.cat;
+  document.getElementById('fcFill').style.width=(FCS.idx/FCS.cards.length*100)+'%';
+  document.getElementById('fcCount').textContent=`${FCS.idx+1}/${FCS.cards.length}`;
+  document.getElementById('fcKnown').textContent=FCS.known;
+  document.getElementById('fcUnknown').textContent=FCS.unknown;
+  document.getElementById('fcLeft').textContent=FCS.cards.length-FCS.idx;
+}
+function flipFC(){
+  if(FCS.idx>=FCS.cards.length) return;
+  FCS.flipped=!FCS.flipped;
+  document.getElementById('flashcard').classList.toggle('flipped',FCS.flipped);
+  snd('click');
+}
+function fcAns(k){
+  if(!FCS.flipped){toast('👆 Najpierw obejrzyj odpowiedź!','inf');return;}
+  if(k){FCS.known++;snd('correct');}else{FCS.unknown++;snd('wrong');}
+  FCS.idx++; renderFC();
+}
+function shuffleFC(){initFC();snd('click');toast('🔀 Przetasowane!','inf')}
+
+// ═══════════════════════════════════════════════════
+//  TTS
+// ═══════════════════════════════════════════════════
+function speakQ(){
+  if(!CFG.tts) return;
+  const btn=document.getElementById('ttsBtn');
+  if(speechSynthesis.speaking){speechSynthesis.cancel();btn.classList.remove('on');return;}
+  const u=new SpeechSynthesisUtterance(document.getElementById('qzText').textContent);
+  u.lang='pl-PL'; u.rate=0.9;
+  btn.classList.add('on');
+  u.onend=u.onerror=()=>btn.classList.remove('on');
+  speechSynthesis.speak(u);
+}
+
+// ═══════════════════════════════════════════════════
+//  SOUND ENGINE
+// ═══════════════════════════════════════════════════
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+function snd(t){
+  if(!CFG.sound&&t!=='click') return;
+  try{
+    const g=AC.createGain();g.connect(AC.destination);g.gain.value=0.2;
+    const o=AC.createOscillator();o.connect(g);
+    if(t==='click'){o.type='sine';o.frequency.value=700;g.gain.setTargetAtTime(0,AC.currentTime+.04,.008);o.start();o.stop(AC.currentTime+.07);}
+    else if(t==='correct'){o.type='sine';o.frequency.setValueAtTime(520,AC.currentTime);o.frequency.setValueAtTime(780,AC.currentTime+.1);o.frequency.setValueAtTime(1040,AC.currentTime+.2);g.gain.setTargetAtTime(0,AC.currentTime+.32,.04);o.start();o.stop(AC.currentTime+.55);}
+    else if(t==='wrong'){o.type='sawtooth';o.frequency.setValueAtTime(200,AC.currentTime);o.frequency.setValueAtTime(140,AC.currentTime+.15);g.gain.setTargetAtTime(0,AC.currentTime+.18,.03);o.start();o.stop(AC.currentTime+.35);}
+    else if(t==='fanfare'){[[523,0],[659,.1],[784,.2],[1047,.32]].forEach(([f,d])=>{const o2=AC.createOscillator(),g2=AC.createGain();o2.connect(g2);g2.connect(AC.destination);o2.type='triangle';o2.frequency.value=f;g2.gain.setValueAtTime(.17,AC.currentTime+d);g2.gain.setTargetAtTime(0,AC.currentTime+d+.12,.03);o2.start(AC.currentTime+d);o2.stop(AC.currentTime+d+.3);});}
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg,type='inf'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),350);},2800);
+}
+
+// ═══════════════════════════════════════════════════
+//  CONFETTI
+// ═══════════════════════════════════════════════════
+function confetti(){
+  const cols=['#7c3aed','#06b6d4','#f59e0b','#10b981','#f43f5e','#a855f7'];
+  for(let i=0;i<70;i++){
+    const el=document.createElement('div');
+    el.className='cf';
+    const sz=5+Math.random()*9;
+    el.style.cssText=`left:${Math.random()*100}vw;top:${-Math.random()*50}px;width:${sz}px;height:${sz}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${2+Math.random()*3}s;animation-delay:${Math.random()*1.5}s;`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function E(s){try{return encodeURIComponent(s)}catch(e){return s}}
+function D(s){try{return decodeURIComponent(s)}catch(e){return s}}
+function resetAll(){if(!confirm('Usunąć WSZYSTKIE dane? Tej operacji nie można cofnąć!'))return;localStorage.clear();location.reload();}
+
+function showInstall(){
+  const o=document.createElement('div');
+  o.className='modal-overlay';
+  o.innerHTML=`<div class="modal">
+    <div class="modal-title">📲 Instalacja</div>
+    <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:14px;margin-bottom:10px;font-size:.86rem;line-height:1.8;font-weight:600">
+      <div style="color:var(--neon4);font-family:var(--font-head);margin-bottom:5px">🤖 Android Chrome</div>
+      1. Menu ⋮ (prawy górny róg)<br>
+      2. "Dodaj do ekranu głównego"<br>
+      3. Potwierdź → Gotowe! 🎉
+    </div>
+    <div style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:12px;padding:14px;font-size:.86rem;line-height:1.8;font-weight:600">
+      <div style="color:var(--neon2);font-family:var(--font-head);margin-bottom:5px">📱 Samsung Internet</div>
+      1. Menu ☰ (dół ekranu)<br>
+      2. "Dodaj stronę do" → "Ekran główny"<br>
+      3. Potwierdź → Gotowe! 🎉
+    </div>
+    <span class="m-close"onclick="this.closest('.modal-overlay').remove()">Zamknij</span>
+  </div>`;
+  document.body.appendChild(o);
+  o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+}
+
+// ═══════════════════════════════════════════════════
+//  PWA
+// ═══════════════════════════════════════════════════
+(function(){
+  const manifest={name:'EduSmart',short_name:'EduSmart',description:'Nauka dla klas 4–6',start_url:'./',display:'standalone',background_color:'#060614',theme_color:'#060614',orientation:'portrait-primary',lang:'pl',
+    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23060614'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle'%3E%F0%9F%A6%89%3C/text%3E%3C/svg%3E",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  document.getElementById('pwaManifest').href=URL.createObjectURL(mBlob);
+  const sw=`const C='es3-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add('/')).then(()=>self.skipWaiting()))});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('/'))))});`;
+  if('serviceWorker' in navigator){
+    const swBlob=new Blob([sw],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
+  }
+  if(window.matchMedia('(display-mode:standalone)').matches||localStorage.getItem('es3_pwa_dismissed')) return;
+  let dp=null;
+  const banner=document.getElementById('pwaBanner');
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTimeout(()=>banner.classList.add('show'),5000);});
+  document.getElementById('pwaInstallBtn').addEventListener('click',async()=>{
+    if(!dp){showInstall();return;}
+    banner.classList.remove('show');dp.prompt();
+    const{outcome}=await dp.userChoice;
+    if(outcome==='accepted') toast('📱 Zainstalowano!','ok');
+    dp=null;
+  });
+  document.getElementById('pwaDismiss').addEventListener('click',()=>{banner.classList.remove('show');localStorage.setItem('es3_pwa_dismissed','1');});
+  window.addEventListener('appinstalled',()=>{banner.classList.remove('show');toast('📱 Aplikacja zainstalowana!','ach');});
+})();
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+const TIPS=['Ładuję pytania…','Przygotowuję zadania…','Buduję odznaki…','Prawie gotowe…'];
+window.addEventListener('load',()=>{
+  const savedTheme=localStorage.getItem('es3_theme')||'dark';
+  document.body.dataset.theme=savedTheme;
+  document.getElementById('themeColorMeta').content=savedTheme==='light'?'#f0f4ff':'#060614';
+  loadCFG();
+  let ti=0;
+  const hint=document.getElementById('loaderHint');
+  const tipInt=setInterval(()=>{hint.textContent=TIPS[++ti%TIPS.length];},550);
+  setTimeout(()=>{
+    clearInterval(tipInt);
+    document.getElementById('loader').classList.add('out');
+    const profiles=getProfiles();
+    if(!profiles.length) goto('sProfiles');
+    else goto('sProfiles');
+  },2200);
+  document.addEventListener('click',()=>{if(AC.state==='suspended') AC.resume();},{once:true});
+});
+</script>
+</body>
+</html>
